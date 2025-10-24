@@ -1,0 +1,17 @@
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "streamlit run app/streamlit_app.py --server.port $PORT --server.address 0.0.0.0 --server.maxUploadSize 200"
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "STREAMLIT_SERVER_MAX_UPLOAD_SIZE": "200",
+        "STREAMLIT_SERVER_ENABLE_CORS": "false",
+        "STREAMLIT_SERVER_HEADLESS": "true"
+      }
+    }
+  }
+}
