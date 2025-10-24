@@ -36,11 +36,6 @@ venv.bak/
 
 # Data files (keep structure, ignore large files)
 data/raw/*.csv
-data/raw/*.xlsx
-data/raw/*.xls
-data/processed/*.csv
-data/processed/*.xlsx
-data/processed/*.xls
 
 # But keep example/sample files if needed
 !data/raw/sample_*.csv
