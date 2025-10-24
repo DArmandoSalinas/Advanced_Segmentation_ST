@@ -43,7 +43,7 @@ SettingUp/
 │   ├── Cluster1.ipynb               # Social engagement development
 │   ├── Cluster2.ipynb               # Geography segmentation development
 │   ├── Cluster3.ipynb               # APREU activities development
-│   └── sacar_historicos_PLANTILLA.ipynb  # Historical data extraction template
+│   
 │
 ├── data/                             # Data Files
 │   ├── raw/                         # Original data files
