@@ -79,17 +79,17 @@ def validate_data(df):
     for col in required_columns['cluster1']:
         if col not in df.columns:
             validation_results['cluster1_ready'] = False
-            validation_results['warnings'].append(f"Cluster 1 may not work: missing '{col}'")
+            validation_results['warnings'].append(f"Cluster 1 puede no funcionar: falta '{col}'")
     
     for col in required_columns['cluster2']:
         if col not in df.columns:
             validation_results['cluster2_ready'] = False
-            validation_results['warnings'].append(f"Cluster 2 may not work: missing '{col}'")
+            validation_results['warnings'].append(f"Cluster 2 puede no funcionar: falta '{col}'")
     
     for col in required_columns['cluster3']:
         if col not in df.columns:
             validation_results['cluster3_ready'] = False
-            validation_results['warnings'].append(f"Cluster 3 may not work: missing '{col}'")
+            validation_results['warnings'].append(f"Cluster 3 puede no funcionar: falta '{col}'")
     
     return validation_results
 

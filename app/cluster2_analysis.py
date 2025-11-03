@@ -1,6 +1,6 @@
 """
-Cluster 2: Geography & Engagement Segmentation
-Segments contacts by geography (Local/Domestic/International) and engagement level
+Cluster 2: Segmentación por Geografía y Compromiso
+Segmenta contactos por geografía (Local/Foráneo/Internacional) y nivel de compromiso
 """
 
 import streamlit as st
@@ -188,17 +188,17 @@ def process_cluster2_data(_data, geo_config=None, cache_key=None):
             thr = grp['engagement_score'].quantile(HIGH_ENG_Q)
             df.loc[grp.index, 'is_high_engager'] = grp['engagement_score'] >= thr
     
-    # Assign 2A-2F segments
+    # Assign 2A-2F segments with descriptive names
     def assign_c2(row):
         tier = row['geo_tier']
         hi = bool(row['is_high_engager'])
         if tier == 'domestic_non_local':
-            return '2A' if hi else '2B'
+            return '2A - Foráneo, Alto Compromiso' if hi else '2B - Foráneo, Bajo Compromiso'
         if tier == 'international':
-            return '2C' if hi else '2D'
+            return '2C - Internacional, Alto Compromiso' if hi else '2D - Internacional, Bajo Compromiso'
         if tier == 'local':
-            return '2E' if hi else '2F'
-        return '2Z'
+            return '2E - Local, Alto Compromiso' if hi else '2F - Local, Bajo Compromiso'
+        return '2Z - Sin Geografía'
     
     df['segment_c2'] = df.apply(assign_c2, axis=1)
     
@@ -207,13 +207,13 @@ def process_cluster2_data(_data, geo_config=None, cache_key=None):
     country_name = geo_config['home_country']
     
     ACTION_MAP = {
-        '2A': f'Digital engagement + virtual events ({country_name} non-{local_name})',
-        '2B': f'WhatsApp/email pushes ({country_name} non-{local_name})',
-        '2C': 'Webinars + virtual Q&A (International)',
-        '2D': 'Awareness campaigns (International)',
-        '2E': f'In-person events + local engagement (Local {local_name})',
-        '2F': f'Local nurture + WhatsApp (Local {local_name})',
-        '2Z': 'Investigate missing geography'
+        '2A - Foráneo, Alto Compromiso': f'Compromiso digital + eventos virtuales ({country_name} fuera de {local_name})',
+        '2B - Foráneo, Bajo Compromiso': f'Empuje WhatsApp/email ({country_name} fuera de {local_name})',
+        '2C - Internacional, Alto Compromiso': 'Webinars + Q&A virtual (Internacional)',
+        '2D - Internacional, Bajo Compromiso': 'Campañas de concientización (Internacional)',
+        '2E - Local, Alto Compromiso': f'Eventos presenciales + compromiso local (Local {local_name})',
+        '2F - Local, Bajo Compromiso': f'Nutrición local + WhatsApp (Local {local_name})',
+        '2Z - Sin Geografía': 'Investigar geografía faltante'
     }
     df['segment_c2_action'] = df['segment_c2'].map(ACTION_MAP)
     
@@ -229,7 +229,7 @@ def process_cluster2_data(_data, geo_config=None, cache_key=None):
     def convert_academic_period(period_code):
         """Convert YYYYMM period codes to readable format"""
         if pd.isna(period_code) or period_code == "" or period_code == "unknown":
-            return "Unknown"
+            return "Desconocido"
         
         try:
             period_str = str(period_code).strip()
@@ -241,18 +241,18 @@ def process_cluster2_data(_data, geo_config=None, cache_key=None):
             
             # Map period codes to semester names
             period_map = {
-                5: "Special",
-                10: "Spring", 
-                35: "Summer",
-                60: "Fall",
-                75: "Winter/Special"
+                5: "Especial",
+                10: "Primavera", 
+                35: "Verano",
+                60: "Otoño",
+                75: "Invierno/Especial"
             }
             
-            semester = period_map.get(period, f"Unknown({period})")
+            semester = period_map.get(period, f"Desconocido({period})")
             return f"{year} {semester}"
             
         except (ValueError, IndexError):
-            return f"Invalid: {period_code}"
+            return f"Inválido: {period_code}"
     
     # Apply period conversion
     if 'periodo_de_ingreso' in df.columns:
@@ -290,15 +290,15 @@ def create_cluster2_xlsx_export(cohort):
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         # 1. Executive Summary (use cohort_export with latest values)
         exec_summary = pd.DataFrame({
-            'Metric': [
-                'Total Contacts',
-                'Segments',
-                'Average Engagement Score',
-                'Median Likelihood to Close',
-                'Total Closed Deals',
-                'Average Days to Close'
+            'Métrica': [
+                'Total Contactos',
+                'Segmentos',
+                'Puntuación Promedio de Compromiso',
+                'Mediana de Probabilidad de Cierre',
+                'Total de Tratos Cerrados',
+                'Días Promedio hasta Cierre'
             ],
-            'Value': [
+            'Valor': [
                 f"{len(cohort_export):,}",
                 ', '.join(cohort_export['segment_c2'].unique()),
                 f"{cohort_export['engagement_score'].mean():.2f}" if 'engagement_score' in cohort_export.columns else 'N/A',
@@ -338,17 +338,17 @@ def create_cluster2_xlsx_export(cohort):
         # 7-9. Top Countries, States, Cities
         if 'country_any' in cohort_export.columns:
             top_countries = cohort_export['country_any'].value_counts().head(20).reset_index()
-            top_countries.columns = ['Country', 'Count']
+            top_countries.columns = ['País', 'Conteo']
             top_countries.to_excel(writer, sheet_name="7_top_countries", index=False)
         
         if 'state_any' in cohort_export.columns:
             top_states = cohort_export['state_any'].value_counts().head(20).reset_index()
-            top_states.columns = ['State', 'Count']
+            top_states.columns = ['Estado', 'Conteo']
             top_states.to_excel(writer, sheet_name="8_top_states", index=False)
         
         if 'city_any' in cohort_export.columns:
             top_cities = cohort_export['city_any'].value_counts().head(20).reset_index()
-            top_cities.columns = ['City', 'Count']
+            top_cities.columns = ['Ciudad', 'Conteo']
             top_cities.to_excel(writer, sheet_name="9_top_cities", index=False)
         
         # 10-11. Lifecycle Analysis (using latest values only)
@@ -358,8 +358,8 @@ def create_cluster2_xlsx_export(cohort):
             lifecycle_pct = lifecycle_pct.div(lifecycle_pct.sum(axis=1), axis=0) * 100
             lifecycle_pct.to_excel(writer, sheet_name="10_lifecycle_analysis")
             
-            lifecycle_top = cohort_export.groupby('segment_c2')['lifecycle_stage'].agg(lambda x: x.mode()[0] if len(x.mode()) > 0 else 'Unknown').reset_index()
-            lifecycle_top.columns = ['Segment', 'Most Common Stage']
+            lifecycle_top = cohort_export.groupby('segment_c2')['lifecycle_stage'].agg(lambda x: x.mode()[0] if len(x.mode()) > 0 else 'Desconocido').reset_index()
+            lifecycle_top.columns = ['Segmento', 'Etapa Más Común']
             lifecycle_top.to_excel(writer, sheet_name="11_lifecycle_top_by_segment", index=False)
         
         # 12. Traffic Sources (using latest source only)
@@ -429,94 +429,95 @@ def render_cluster2(data):
     geo_config = get_geo_config()
     
     # Show current configuration at the top
-    st.markdown("## 🌍 Cluster 2: Geography & Engagement Segmentation")
+    st.markdown("## 🌍 Cluster 2: Segmentación por Geografía y Compromiso")
     
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.markdown(f"**Current Configuration:** 🏠 {geo_config['home_country']} | 📍 {geo_config['local_region']}")
+        st.markdown(f"**Configuración Actual:** 🏠 {geo_config['home_country']} | 📍 {geo_config['local_region']}")
     with col2:
-        if st.button("⚙️ Change Settings", key="change_geo_settings"):
-            st.info("👈 Use the Geographic Settings in the sidebar to change your home country and local region")
+        if st.button("⚙️ Cambiar Configuración", key="change_geo_settings"):
+            st.info("👈 Usa la Configuración Geográfica en la barra lateral para cambiar tu país de origen y región local")
     
     # About this analysis
-    with st.expander("ℹ️ About This Analysis", expanded=False):
+    with st.expander("ℹ️ Acerca de Este Análisis", expanded=False):
         st.markdown(f"""
-        ### 🎯 What This Cluster Does
-        **Segments contacts by geography and engagement** into 6 actionable groups for targeted regional campaigns.
+        ### 🎯 Qué Hace Este Cluster
+        **Segmenta contactos por geografía y compromiso** en 6 grupos accionables para campañas regionales dirigidas.
         
-        ### 👥 Who Should Use This
-        - **Regional Marketing Teams** - Tailor campaigns by geography
-        - **Admissions Officers** - Plan visits and events by region
-        - **International Recruitment** - Understand international vs domestic performance
+        ### 👥 Quién Debe Usar Esto
+        - **Equipos de Marketing Regional** - Adaptar campañas por geografía
+        - **Oficiales de Admisiones** - Planificar visitas y eventos por región
+        - **Reclutamiento Internacional** - Entender rendimiento internacional vs nacional
         
-        ### 🔑 Key Questions Answered
-        - Do local contacts close faster than international ones?
-        - Which states/countries have the highest engagement?
-        - Should we invest more in international recruitment?
-        - What's the optimal strategy for each geographic tier?
+        ### 🔑 Preguntas Clave Respondidas
+        - ¿Los contactos locales cierran más rápido que los internacionales?
+        - ¿Qué estados/países tienen el mayor compromiso?
+        - ¿Deberíamos invertir más en reclutamiento internacional?
+        - ¿Cuál es la estrategia óptima para cada nivel geográfico?
         
-        ### 📊 Segments Defined (Current: {geo_config['home_country']}/{geo_config['local_region']})
-        - **2A (Domestic Non-Local, High)** - High engagement from {geo_config['home_country']} outside {geo_config['local_region']}
-        - **2B (Domestic Non-Local, Low)** - Low engagement from {geo_config['home_country']} outside {geo_config['local_region']}
-        - **2C (International, High)** - High engagement from outside {geo_config['home_country']}
-        - **2D (International, Low)** - Low engagement from outside {geo_config['home_country']}
-        - **2E (Local, High)** - High engagement from {geo_config['local_region']}
-        - **2F (Local, Low)** - Low engagement from {geo_config['local_region']}
+        ### 📊 Segmentos Definidos (Actual: {geo_config['home_country']}/{geo_config['local_region']})
+        - **2A (Foráneo, Alto)** - Alto compromiso de {geo_config['home_country']} fuera de {geo_config['local_region']}
+        - **2B (Foráneo, Bajo)** - Bajo compromiso de {geo_config['home_country']} fuera de {geo_config['local_region']}
+        - **2C (Internacional, Alto)** - Alto compromiso de fuera de {geo_config['home_country']}
+        - **2D (Internacional, Bajo)** - Bajo compromiso de fuera de {geo_config['home_country']}
+        - **2E (Local, Alto)** - Alto compromiso de {geo_config['local_region']}
+        - **2F (Local, Bajo)** - Bajo compromiso de {geo_config['local_region']}
+        - **2Z (Sin Geografía): Investigar geografía faltante**
         
-        ### 💡 Example Insight
-        *"2E (Local {geo_config['local_region']}, High) closes in 45 days on average vs 120 days for 2C (International)"*
-        → **Action:** Prioritize local high-engagement contacts, create virtual events for international
+        ### 💡 Ejemplo de Insight
+        *"2E (Local {geo_config['local_region']}, Alto) cierra en 45 días en promedio vs 120 días para 2C (Internacional)"*
+        → **Acción:** Priorizar contactos locales de alto compromiso, crear eventos virtuales para internacionales
         
-        ### ⚙️ Dynamic Configuration
-        This cluster adapts to YOUR geography! Change settings in the sidebar to analyze any country/region.
+        ### ⚙️ Configuración Dinámica
+        ¡Este cluster se adapta a TU geografía! Cambia la configuración en la barra lateral para analizar cualquier país/región.
         """)
     
     st.markdown("---")
     
     if data is None:
-        st.error("⚠️ Data not loaded.")
+        st.error("⚠️ Datos no cargados.")
         return
     
     # Process data with geo config and cache busting
     # This ensures the cache refreshes when global filters change the data
     cache_key = f"c2_{len(data)}_{data['Record ID'].iloc[0] if 'Record ID' in data.columns else 'na'}"
-    with st.spinner(f"Processing Cluster 2 data for {geo_config['home_country']}..."):
+    with st.spinner(f"Procesando datos del Cluster 2 para {geo_config['home_country']}..."):
         cohort = process_cluster2_data(data, geo_config, cache_key)
     
     # Show contact count AFTER core filters (APREU + removing other/subscriber)
     if data is not None:
         active_filters = sum(1 for k in st.session_state.keys() if k.startswith('filter_'))
         if active_filters > 0:
-            st.info(f"🔍 Analyzing {len(cohort):,} contacts after applying core filters (APREU, excluding 'other'/'subscriber') + global filters")
+            st.info(f"🔍 Analizando {len(cohort):,} contactos después de aplicar filtros principales (APREU, excluyendo 'other'/'subscriber') + filtros globales")
         else:
-            st.info(f"📊 Analyzing {len(cohort):,} contacts after applying core filters (APREU, excluding 'other'/'subscriber')")
+            st.info(f"📊 Analizando {len(cohort):,} contactos después de aplicar filtros principales (APREU, excluyendo 'other'/'subscriber')")
     
     if len(cohort) == 0:
-        st.warning("No data available after filters.")
+        st.warning("No hay datos disponibles después de los filtros.")
         return
     
     # Add cluster-specific filters
-    with st.expander("🎛️ Cluster 2 Specific Filters", expanded=False):
+    with st.expander("🎛️ Filtros Específicos del Cluster 2", expanded=False):
         col1, col2, col3 = st.columns(3)
         
         with col1:
             # Segment filter
             available_segments = sorted(cohort['segment_c2'].unique())
             selected_segments = st.multiselect(
-                "Filter by Segment (2A-2F):",
+                "Filtrar por Segmento (2A-2F):",
                 options=available_segments,
                 default=available_segments,
-                help="Select segments to include"
+                help="Seleccionar segmentos a incluir"
             )
             
             # Lifecycle stage filter
             if 'lifecycle_stage' in cohort.columns:
                 available_lifecycle = sorted(cohort['lifecycle_stage'].dropna().unique())
                 selected_lifecycle = st.multiselect(
-                    "Filter by Lifecycle Stage:",
+                    "Filtrar por Etapa del Ciclo de Vida:",
                     options=available_lifecycle,
                     default=available_lifecycle,
-                    help="Select lifecycle stages to include"
+                    help="Seleccionar etapas del ciclo de vida a incluir"
                 )
             else:
                 selected_lifecycle = None
@@ -529,37 +530,37 @@ def render_cluster2(data):
                     "Filter by Periodo de Ingreso:",
                     options=available_periodos,
                     default=available_periodos,
-                    help="Select entry periods to include"
+                    help="Seleccionar períodos de ingreso a incluir"
                 )
             else:
                 selected_periodos = None
             
             # Closure status filter
-            closure_options = ["All", "Closed Only", "Open Only"]
+            closure_options = ["Todos", "Solo Cerrados", "Solo Abiertos"]
             closure_filter = st.radio(
-                "Closure Status:",
+                "Estado de Cierre:",
                 options=closure_options,
                 index=0,
-                help="Filter by closure status"
+                help="Filtrar por estado de cierre"
             )
         
         with col3:
             # Geography tier filter
             available_tiers = sorted(cohort['geo_tier'].unique())
             selected_tiers = st.multiselect(
-                "Filter by Geography Tier:",
+                "Filtrar por Nivel Geográfico:",
                 options=available_tiers,
                 default=available_tiers,
-                help="Select geographic tiers to include"
+                help="Seleccionar niveles geográficos a incluir"
             )
             
             # Country filter (top countries)
             top_countries = cohort['country_any'].value_counts().head(20).index.tolist()
             selected_countries = st.multiselect(
-                "Filter by Country (Top 20):",
+                "Filtrar por País (Top 20):",
                 options=top_countries,
                 default=top_countries,
-                help="Select countries to include"
+                help="Seleccionar países a incluir"
             )
         
         # Apply cluster-specific filters
@@ -578,9 +579,9 @@ def render_cluster2(data):
             cohort_filtered = cohort_filtered[cohort_filtered['periodo_ingreso'].isin(selected_periodos)]
         
         # Apply closure status filter
-        if closure_filter == "Closed Only":
+        if closure_filter == "Solo Cerrados":
             cohort_filtered = cohort_filtered[cohort_filtered['close_date'].notna()]
-        elif closure_filter == "Open Only":
+        elif closure_filter == "Solo Abiertos":
             cohort_filtered = cohort_filtered[cohort_filtered['close_date'].isna()]
         
         st.info(f"✅ Showing {len(cohort_filtered):,} of {len(cohort):,} contacts after cluster filters")
@@ -646,21 +647,21 @@ def render_cluster2(data):
         
         with col2:
             # Export comprehensive XLSX workbook
-            with st.spinner("Generating comprehensive Excel workbook..."):
+            with st.spinner("Generando libro de trabajo Excel integral..."):
                 xlsx_data = create_cluster2_xlsx_export(cohort)
                 st.download_button(
-                    label="📊 Download Comprehensive Workbook (XLSX) - 20+ Sheets",
+                    label="📊 Descargar Libro de Trabajo Integral (XLSX) - 20+ Hojas",
                     data=xlsx_data,
                     file_name=f"cluster2_summary_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
-                    help="Comprehensive analysis workbook with 20+ sheets: executive summary, segment performance, geography, engagement, lifecycle, closure stats, and more!"
+                    help="Libro de trabajo de análisis integral con 20+ hojas: resumen ejecutivo, rendimiento de segmentos, geografía, compromiso, ciclo de vida, estadísticas de cierre, ¡y más!"
                 )
     
     # Create tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-        "📊 Overview", "🎯 Segment Analysis", "🗺️ Geography Analysis",
-        "💰 Business Outcomes", "⚡ Fast/Slow Closers", "🔬 Performance Benchmarks", "🔍 Contact Lookup"
+        "📊 Resumen", "🎯 Análisis de Segmento", "🗺️ Análisis Geográfico",
+        "💰 Resultados de Negocio", "⚡ Cerradores Rápidos/Lentos", "🔬 Benchmarks de Rendimiento", "🔍 Búsqueda de Contactos"
     ])
     
     with tab1:
@@ -686,13 +687,13 @@ def render_cluster2(data):
 
 def render_overview_tab_c2(cohort):
     """Render overview tab for Cluster 2"""
-    st.markdown("### 📊 Executive Summary")
+    st.markdown("### 📊 Resumen Ejecutivo")
     
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Contacts", f"{len(cohort):,}")
+        st.metric("Total Contactos", f"{len(cohort):,}")
     
     with col2:
         local_count = (cohort['geo_tier'] == 'local').sum()
@@ -700,11 +701,11 @@ def render_overview_tab_c2(cohort):
     
     with col3:
         domestic_count = (cohort['geo_tier'] == 'domestic_non_local').sum()
-        st.metric("Domestic (non-QRO)", f"{domestic_count:,}")
+        st.metric("Foráneo (no-QRO)", f"{domestic_count:,}")
     
     with col4:
         intl_count = (cohort['geo_tier'] == 'international').sum()
-        st.metric("International", f"{intl_count:,}")
+        st.metric("Internacional", f"{intl_count:,}")
     
     st.markdown("---")
     
@@ -712,31 +713,42 @@ def render_overview_tab_c2(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Segment Distribution (2A-2F)")
+        st.markdown("#### Distribución de Segmentos (2A-2F)")
         seg_counts = cohort['segment_c2'].value_counts()
         fig = px.pie(
             values=seg_counts.values,
             names=seg_counts.index,
-            title="2A-2F Segment Distribution",
+            title="Segmentos por Ubicación y Compromiso",
             hole=0.4,
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("#### Geography Tier Distribution")
+        st.markdown("#### Distribución por Nivel Geográfico")
         geo_counts = cohort['geo_tier'].value_counts()
+        
+        # Translate geo_tier names to Spanish
+        geo_labels_map = {
+            'local': 'Local',
+            'domestic_non_local': 'Foráneo',
+            'international': 'Internacional',
+            'unknown': 'Desconocido'
+        }
+        geo_counts_translated = geo_counts.copy()
+        geo_counts_translated.index = geo_counts_translated.index.map(lambda x: geo_labels_map.get(x, x))
+        
         fig = px.pie(
-            values=geo_counts.values,
-            names=geo_counts.index,
-            title="Geographic Distribution",
+            values=geo_counts_translated.values,
+            names=geo_counts_translated.index,
+            title="Niveles Geográficos",
             hole=0.4,
             color_discrete_sequence=px.colors.qualitative.Pastel
         )
         st.plotly_chart(fig, use_container_width=True)
     
     # Segment summary table - WITHOUT likelihood to close
-    st.markdown("#### Segment Performance Summary")
+    st.markdown("#### Resumen de Rendimiento por Segmento")
     
     segment_summary = cohort.groupby('segment_c2').agg({
         'contact_id': 'count',
@@ -747,62 +759,62 @@ def render_overview_tab_c2(cohort):
         'close_date': lambda x: x.notna().sum()
     }).round(2)
     
-    segment_summary.columns = ['Contacts', 'Avg Sessions', 'Avg Pageviews', 
-                               'Avg Forms', 'Avg Engagement', 'Closed']
-    segment_summary['Close Rate %'] = (
-        segment_summary['Closed'] / segment_summary['Contacts'] * 100
+    segment_summary.columns = ['Contactos', 'Sesiones Prom', 'Páginas Vistas Prom', 
+                               'Formularios Prom', 'Compromiso Prom', 'Cerrados']
+    segment_summary['Tasa de Cierre %'] = (
+        segment_summary['Cerrados'] / segment_summary['Contactos'] * 100
     ).round(1)
     
     st.dataframe(segment_summary, use_container_width=True)
 
 def render_segment_analysis_tab_c2(cohort):
     """Render segment analysis tab"""
-    st.markdown("### 🎯 2A-2F Segment Deep Dive")
+    st.markdown("### 🎯 Análisis Profundo de Segmentos 2A-2F")
     
     # Segment selector
     segments = sorted(cohort['segment_c2'].unique())
-    selected_segment = st.selectbox("Select Segment for Details:", segments)
+    selected_segment = st.selectbox("Seleccionar Segmento para Detalles:", segments)
     
     seg_data = cohort[cohort['segment_c2'] == selected_segment]
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.metric("Total Contacts", f"{len(seg_data):,}")
+        st.metric("Total Contactos", f"{len(seg_data):,}")
     
     with col2:
         close_rate = calculate_close_rate(seg_data)
-        st.metric("Close Rate", f"{close_rate:.1f}%")
+        st.metric("Tasa de Cierre", f"{close_rate:.1f}%")
     
     with col3:
         avg_eng = seg_data['engagement_score'].mean()
-        st.metric("Avg Engagement", f"{avg_eng:.2f}")
+        st.metric("Compromiso Promedio", f"{avg_eng:.2f}")
     
     st.markdown("---")
     
     # Action recommendation
     if 'segment_c2_action' in seg_data.columns:
         action = seg_data['segment_c2_action'].iloc[0]
-        st.info(f"**Recommended Action:** {action}")
+        st.info(f"**Acción Recomendada:** {action}")
     
     # Engagement distribution
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Engagement Score Distribution")
+        st.markdown("#### Distribución de Puntuación de Compromiso")
         fig = px.histogram(
             seg_data, x='engagement_score',
-            title=f"Engagement Score Distribution - {selected_segment}",
+            title=f"Distribución de Puntuación de Compromiso - {selected_segment}",
             nbins=30,
             color_discrete_sequence=['#3498db']
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("#### Sessions Distribution")
+        st.markdown("#### Distribución de Sesiones")
         fig = px.histogram(
             seg_data, x='num_sessions',
-            title=f"Sessions Distribution - {selected_segment}",
+            title=f"Distribución de Sesiones - {selected_segment}",
             nbins=20,
             color_discrete_sequence=['#e74c3c']
         )
@@ -810,13 +822,13 @@ def render_segment_analysis_tab_c2(cohort):
     
     # Lifecycle distribution
     if 'lifecycle_stage' in seg_data.columns:
-        st.markdown("#### Lifecycle Stage Distribution")
+        st.markdown("#### Distribución de Etapa del Ciclo de Vida")
         lifecycle_counts = seg_data['lifecycle_stage'].value_counts().head(10)
         fig = px.bar(
             x=lifecycle_counts.index,
             y=lifecycle_counts.values,
-            title=f"Top Lifecycle Stages - {selected_segment}",
-            labels={'x': 'Lifecycle Stage', 'y': 'Count'},
+            title=f"Principales Etapas del Ciclo de Vida - {selected_segment}",
+            labels={'x': 'Etapa del Ciclo de Vida', 'y': 'Conteo'},
             color=lifecycle_counts.values,
             color_continuous_scale='Viridis'
         )
@@ -824,10 +836,10 @@ def render_segment_analysis_tab_c2(cohort):
 
 def render_geography_analysis_tab(cohort):
     """Render geography analysis tab"""
-    st.markdown("### 🗺️ Geographic Distribution Analysis")
+    st.markdown("### 🗺️ Análisis de Distribución Geográfica")
     
     # Top countries
-    st.markdown("#### Top Countries")
+    st.markdown("#### Principales Países")
     country_counts = cohort['country_any'].value_counts().head(15)
     country_counts = country_counts[country_counts.index != 'unknown']
     
@@ -835,8 +847,8 @@ def render_geography_analysis_tab(cohort):
         x=country_counts.values,
         y=country_counts.index,
         orientation='h',
-        title="Top 15 Countries",
-        labels={'x': 'Contacts', 'y': 'Country'},
+        title="Top 15 Países",
+        labels={'x': 'Contactos', 'y': 'País'},
         color=country_counts.values,
         color_continuous_scale='Blues'
     )
@@ -845,8 +857,8 @@ def render_geography_analysis_tab(cohort):
     
     st.markdown("---")
     
-    # Top Mexican states (for domestic contacts)
-    st.markdown("#### Top Mexican States (Domestic Contacts)")
+    # Top Mexican states (for domestic/foráneo contacts)
+    st.markdown("#### Principales Estados Mexicanos (Contactos Nacionales: Local + Foráneo)")
     domestic = cohort[cohort['geo_tier'].isin(['local', 'domestic_non_local'])]
     
     if len(domestic) > 0:
@@ -857,8 +869,8 @@ def render_geography_analysis_tab(cohort):
             x=state_counts.values,
             y=state_counts.index,
             orientation='h',
-            title="Top 15 Mexican States",
-            labels={'x': 'Contacts', 'y': 'State'},
+            title="Top 15 Estados Mexicanos",
+            labels={'x': 'Contactos', 'y': 'Estado'},
             color=state_counts.values,
             color_continuous_scale='Greens'
         )
@@ -866,16 +878,16 @@ def render_geography_analysis_tab(cohort):
         st.plotly_chart(fig, use_container_width=True)
         
         # State performance metrics
-        st.markdown("#### State Performance (Top 10 by Volume)")
+        st.markdown("#### Rendimiento por Estado (Top 10 por Volumen)")
         
         state_performance = domestic.groupby('state_any').agg({
             'contact_id': 'count',
             'engagement_score': 'mean',
             'close_date': lambda x: x.notna().sum()
         })
-        state_performance.columns = ['Total', 'Avg Engagement', 'Closed']
-        state_performance['Close Rate %'] = (
-            state_performance['Closed'] / state_performance['Total'] * 100
+        state_performance.columns = ['Total', 'Compromiso Prom', 'Cerrados']
+        state_performance['Tasa de Cierre %'] = (
+            state_performance['Cerrados'] / state_performance['Total'] * 100
         ).round(1)
         
         state_performance = state_performance[state_performance.index != 'unknown']
@@ -883,14 +895,14 @@ def render_geography_analysis_tab(cohort):
         
         st.dataframe(state_performance, use_container_width=True)
     else:
-        st.info("No domestic contacts to analyze.")
+        st.info("No hay contactos nacionales para analizar.")
 
 def render_outcomes_tab_c2(cohort):
     """Render business outcomes tab"""
-    st.markdown("### 💰 Business Outcomes by Geography")
+    st.markdown("### 💰 Resultados de Negocio por Geografía")
     
     # Lifecycle Stage Analysis
-    st.markdown("#### 🔄 Lifecycle Stage Distribution")
+    st.markdown("#### 🔄 Distribución de Etapa del Ciclo de Vida")
     
     if 'lifecycle_stage' in cohort.columns:
         lifecycle_counts = cohort['lifecycle_stage'].value_counts().head(10)
@@ -902,8 +914,8 @@ def render_outcomes_tab_c2(cohort):
                 x=lifecycle_counts.values,
                 y=lifecycle_counts.index,
                 orientation='h',
-                title="Top 10 Lifecycle Stages",
-                labels={'x': 'Contacts', 'y': 'Lifecycle Stage'},
+                title="Top 10 Etapas del Ciclo de Vida",
+                labels={'x': 'Contactos', 'y': 'Etapa del Ciclo de Vida'},
                 color=lifecycle_counts.values,
                 color_continuous_scale='Viridis'
             )
@@ -911,13 +923,13 @@ def render_outcomes_tab_c2(cohort):
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.markdown("**Stage Distribution:**")
+            st.markdown("**Distribución de Etapas:**")
             for stage, count in lifecycle_counts.head(5).items():
                 pct = (count / len(cohort) * 100)
                 st.metric(stage, f"{count:,}", delta=f"{pct:.1f}%")
         
         # Lifecycle by segment
-        st.markdown("**Lifecycle Stage by Segment:**")
+        st.markdown("**Etapa del Ciclo de Vida por Segmento:**")
         
         lifecycle_by_segment = pd.crosstab(
             cohort['lifecycle_stage'],
@@ -933,25 +945,26 @@ def render_outcomes_tab_c2(cohort):
         
         st.markdown("---")
     else:
-        st.info("Lifecycle stage data not available")
+        st.info("Datos de etapa del ciclo de vida no disponibles")
     
     # Close rates by segment
-    st.markdown("#### Close Rate Comparison")
+    st.markdown("#### Comparación de Tasa de Cierre")
     
     segment_close_rates = []
     for seg in sorted(cohort['segment_c2'].unique()):
         seg_data = cohort[cohort['segment_c2'] == seg]
         close_rate = calculate_close_rate(seg_data)
-        segment_close_rates.append({'Segment': seg, 'Close Rate %': close_rate})
+        segment_close_rates.append({'Segmento': seg, 'Tasa de Cierre %': close_rate})
     
     close_rate_df = pd.DataFrame(segment_close_rates)
+    close_rate_df.columns = ['Segmento', 'Tasa de Cierre %']
     
     fig = px.bar(
-        close_rate_df, x='Segment', y='Close Rate %',
-        title="Close Rate by Segment",
-        color='Close Rate %',
+        close_rate_df, x='Segmento', y='Tasa de Cierre %',
+        title="Tasa de Cierre por Segmento Geográfico (2A-2F con descripciones completas en ejes)",
+        color='Tasa de Cierre %',
         color_continuous_scale='RdYlGn',
-        text='Close Rate %'
+        text='Tasa de Cierre %'
     )
     fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
     st.plotly_chart(fig, use_container_width=True)
@@ -960,7 +973,7 @@ def render_outcomes_tab_c2(cohort):
     
     # Time to close analysis
     if 'ttc_bucket' in cohort.columns:
-        st.markdown("#### Time-to-Close Analysis")
+        st.markdown("#### Análisis de Tiempo hasta Cierre")
         
         ttc_dist = pd.crosstab(
             cohort['segment_c2'],
@@ -975,37 +988,37 @@ def render_outcomes_tab_c2(cohort):
         fig = px.bar(
             ttc_dist,
             barmode='stack',
-            title="Time-to-Close Distribution by Segment (%)",
-            labels={'value': 'Percentage', 'variable': 'TTC Bucket'},
+            title="Distribución de Tiempo hasta Cierre por Segmento Geográfico (2A-2F) (%)",
+            labels={'value': 'Porcentaje', 'variable': 'Categoría TTC'},
             color_discrete_sequence=['#2ecc71', '#f39c12', '#e67e22', '#e74c3c', '#95a5a6']
         )
         st.plotly_chart(fig, use_container_width=True)
     
     # Average days to close by geography tier
     if 'days_to_close' in cohort.columns:
-        st.markdown("#### Average Days to Close by Geography")
+        st.markdown("#### Días Promedio hasta Cierre por Geografía")
         
         closed_cohort = cohort[cohort['days_to_close'].notna()]
         if len(closed_cohort) > 0:
             geo_days = closed_cohort.groupby('geo_tier')['days_to_close'].agg(['mean', 'median', 'count'])
-            geo_days.columns = ['Avg Days', 'Median Days', 'Closed Count']
+            geo_days.columns = ['Días Prom', 'Días Mediana', 'Conteo Cerrados']
             geo_days = geo_days.round(1)
             
             st.dataframe(geo_days, use_container_width=True)
 
 def render_fast_slow_closers_c2(cohort):
     """Render fast/slow closers analysis for Cluster 2"""
-    st.markdown("### ⚡ Fast vs Slow Closers Analysis")
-    st.markdown("Identify which Segment × Geography combinations close fastest")
+    st.markdown("### ⚡ Análisis de Cerradores Rápidos vs Lentos")
+    st.markdown("Identifica qué combinaciones de Segmento × Geografía cierran más rápido")
     
     # Filter to closed contacts
     closed = cohort[cohort['close_date'].notna()].copy()
     
     if len(closed) == 0:
-        st.warning("No closed contacts available for analysis.")
+        st.warning("No hay contactos cerrados disponibles para análisis.")
         return
     
-    st.markdown(f"**Analyzing {len(closed):,} closed contacts**")
+    st.markdown(f"**Analizando {len(closed):,} contactos cerrados**")
     
     # Define fast and slow
     fast_threshold = 60
@@ -1020,23 +1033,23 @@ def render_fast_slow_closers_c2(cohort):
     with col1:
         fast_count = (closed['closure_speed'] == 'Fast (≤60 days)').sum()
         fast_pct = (fast_count / len(closed) * 100)
-        st.metric("Fast Closers", f"{fast_count:,}", delta=f"{fast_pct:.1f}%")
+        st.metric("Cerradores Rápidos", f"{fast_count:,}", delta=f"{fast_pct:.1f}%")
     
     with col2:
         medium_count = (closed['closure_speed'] == 'Medium').sum()
         medium_pct = (medium_count / len(closed) * 100)
-        st.metric("Medium Closers", f"{medium_count:,}", delta=f"{medium_pct:.1f}%")
+        st.metric("Cerradores Medios", f"{medium_count:,}", delta=f"{medium_pct:.1f}%")
     
     with col3:
         slow_count = (closed['closure_speed'] == 'Slow (>180 days)').sum()
         slow_pct = (slow_count / len(closed) * 100)
-        st.metric("Slow Closers", f"{slow_count:,}", delta=f"{slow_pct:.1f}%")
+        st.metric("Cerradores Lentos", f"{slow_count:,}", delta=f"{slow_pct:.1f}%")
     
     st.markdown("---")
     
     # Fast closers: Segment × Geography analysis
-    st.markdown("#### ⚡ Fast Closers (≤60 days): Segment × Geography")
-    st.markdown("Which segment + geography combinations close fastest?")
+    st.markdown("#### ⚡ Cerradores Rápidos (≤60 días): Segmento × Geografía")
+    st.markdown("¿Qué combinaciones de segmento + geografía cierran más rápido?")
     
     fast_closers = closed[closed['closure_speed'] == 'Fast (≤60 days)']
     
@@ -1049,15 +1062,15 @@ def render_fast_slow_closers_c2(cohort):
             margins_name='Total'
         )
         
-        st.markdown("**Counts:**")
+        st.markdown("**Conteos:**")
         st.dataframe(fast_crosstab, use_container_width=True)
         
         # Heatmap
         try:
             fig = px.imshow(
                 fast_crosstab.iloc[:-1, :-1],  # Exclude margins
-                labels=dict(x="Geography", y="Segment", color="Count"),
-                title="Fast Closers Heatmap: Segment × Geography",
+                labels=dict(x="Geografía", y="Segmento", color="Conteo"),
+                title="Mapa de Calor Cerradores Rápidos: Segmento × Geografía",
                 color_continuous_scale='Greens',
                 aspect="auto"
             )
@@ -1065,13 +1078,13 @@ def render_fast_slow_closers_c2(cohort):
         except:
             pass
     else:
-        st.info("No fast closers in this dataset.")
+        st.info("No hay cerradores rápidos en este dataset.")
     
     st.markdown("---")
     
     # Slow closers: Segment × Geography analysis
-    st.markdown("#### 🐌 Slow Closers (>180 days): Segment × Geography")
-    st.markdown("Which combinations need more attention?")
+    st.markdown("#### 🐌 Cerradores Lentos (>180 días): Segmento × Geografía")
+    st.markdown("¿Qué combinaciones necesitan más atención?")
     
     slow_closers = closed[closed['closure_speed'] == 'Slow (>180 days)']
     
@@ -1084,15 +1097,15 @@ def render_fast_slow_closers_c2(cohort):
             margins_name='Total'
         )
         
-        st.markdown("**Counts:**")
+        st.markdown("**Conteos:**")
         st.dataframe(slow_crosstab, use_container_width=True)
         
         # Heatmap
         try:
             fig = px.imshow(
                 slow_crosstab.iloc[:-1, :-1],  # Exclude margins
-                labels=dict(x="Geography", y="Segment", color="Count"),
-                title="Slow Closers Heatmap: Segment × Geography",
+                labels=dict(x="Geografía", y="Segmento", color="Conteo"),
+                title="Mapa de Calor Cerradores Lentos: Segmento × Geografía",
                 color_continuous_scale='Reds',
                 aspect="auto"
             )
@@ -1100,12 +1113,12 @@ def render_fast_slow_closers_c2(cohort):
         except:
             pass
     else:
-        st.info("No slow closers in this dataset.")
+        st.info("No hay cerradores lentos en este dataset.")
     
     st.markdown("---")
     
     # Insights
-    st.markdown("#### 💡 Key Insights")
+    st.markdown("#### 💡 Insights Clave")
     
     insights = []
     
@@ -1115,7 +1128,7 @@ def render_fast_slow_closers_c2(cohort):
         if len(fast_by_combo) > 0:
             best_combo = fast_by_combo.idxmax()
             best_count = fast_by_combo.max()
-            insights.append(f"✅ **Best Fast Closer Combination:** {best_combo[0]} + {best_combo[1]} ({best_count} contacts)")
+            insights.append(f"✅ **Mejor Combinación de Cerradores Rápidos:** {best_combo[0]} + {best_combo[1]} ({best_count} contactos)")
     
     if len(slow_closers) > 0:
         # Worst performing combination
@@ -1123,28 +1136,28 @@ def render_fast_slow_closers_c2(cohort):
         if len(slow_by_combo) > 0:
             worst_combo = slow_by_combo.idxmax()
             worst_count = slow_by_combo.max()
-            insights.append(f"⚠️ **Most Common Slow Closer Combination:** {worst_combo[0]} + {worst_combo[1]} ({worst_count} contacts)")
+            insights.append(f"⚠️ **Combinación Más Común de Cerradores Lentos:** {worst_combo[0]} + {worst_combo[1]} ({worst_count} contactos)")
     
     # Overall ratio
     if len(fast_closers) > 0 and len(slow_closers) > 0:
         ratio = len(fast_closers) / len(slow_closers)
-        insights.append(f"📊 **Fast/Slow Ratio:** {ratio:.2f}x")
+        insights.append(f"📊 **Proporción Rápidos/Lentos:** {ratio:.2f}x")
     
     if insights:
         for insight in insights:
             st.markdown(insight)
     else:
-        st.info("Not enough data for insights")
+        st.info("No hay suficientes datos para insights")
 
 def render_performance_benchmarks_c2(cohort):
     """Render performance benchmarks tab for Cluster 2"""
-    st.markdown("### 🔬 Performance Benchmarks & Geography Analysis")
-    st.markdown("Compare segments and geographies against key performance indicators")
+    st.markdown("### 🔬 Benchmarks de Rendimiento y Análisis Geográfico")
+    st.markdown("Compara segmentos y geografías contra indicadores clave de rendimiento")
     
     st.markdown("---")
     
     # Benchmark metrics by segment
-    st.markdown("#### 📊 Key Performance Indicators by Segment")
+    st.markdown("#### 📊 Indicadores Clave de Rendimiento por Segmento")
     
     benchmark_metrics = cohort.groupby('segment_c2').agg({
         'contact_id': 'count',
@@ -1163,7 +1176,7 @@ def render_performance_benchmarks_c2(cohort):
     st.markdown("---")
     
     # Geography tier performance
-    st.markdown("#### 🗺️ Performance by Geography Tier")
+    st.markdown("#### 🗺️ Rendimiento por Nivel Geográfico")
     
     geo_performance = cohort.groupby('geo_tier').agg({
         'contact_id': 'count',
@@ -1172,8 +1185,8 @@ def render_performance_benchmarks_c2(cohort):
         'close_date': lambda x: x.notna().sum()
     }).round(2)
     
-    geo_performance.columns = ['Count', 'Avg Sessions', 'Avg Engagement', 'Closed']
-    geo_performance['Close Rate %'] = (geo_performance['Closed'] / geo_performance['Count'] * 100).round(1)
+    geo_performance.columns = ['Conteo', 'Sesiones Prom', 'Compromiso Prom', 'Cerrados']
+    geo_performance['Tasa de Cierre %'] = (geo_performance['Cerrados'] / geo_performance['Conteo'] * 100).round(1)
     
     col1, col2 = st.columns(2)
     
@@ -1183,10 +1196,10 @@ def render_performance_benchmarks_c2(cohort):
     with col2:
         fig = px.bar(
             x=geo_performance.index,
-            y=geo_performance['Close Rate %'],
-            title="Close Rate by Geography Tier",
-            labels={'x': 'Geography Tier', 'y': 'Close Rate %'},
-            color=geo_performance['Close Rate %'],
+            y=geo_performance['Tasa de Cierre %'],
+            title="Tasa de Cierre por Nivel Geográfico",
+            labels={'x': 'Nivel Geográfico', 'y': 'Tasa de Cierre %'},
+            color=geo_performance['Tasa de Cierre %'],
             color_continuous_scale='RdYlGn'
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -1194,7 +1207,7 @@ def render_performance_benchmarks_c2(cohort):
     st.markdown("---")
     
     # Country performance (top countries)
-    st.markdown("#### 🌍 Top Country Performance")
+    st.markdown("#### 🌍 Rendimiento de Principales Países")
     
     top_countries = cohort['country_any'].value_counts().head(15).index
     country_data = cohort[cohort['country_any'].isin(top_countries)]
@@ -1206,9 +1219,9 @@ def render_performance_benchmarks_c2(cohort):
         'close_date': lambda x: x.notna().sum()
     }).round(2)
     
-    country_performance.columns = ['Count', 'Avg Sessions', 'Avg Engagement', 'Closed']
-    country_performance['Close Rate %'] = (country_performance['Closed'] / country_performance['Count'] * 100).round(1)
-    country_performance = country_performance.sort_values('Close Rate %', ascending=False)
+    country_performance.columns = ['Conteo', 'Sesiones Prom', 'Compromiso Prom', 'Cerrados']
+    country_performance['Tasa de Cierre %'] = (country_performance['Cerrados'] / country_performance['Conteo'] * 100).round(1)
+    country_performance = country_performance.sort_values('Tasa de Cierre %', ascending=False)
     
     col1, col2 = st.columns(2)
     
@@ -1218,10 +1231,10 @@ def render_performance_benchmarks_c2(cohort):
     with col2:
         fig = px.bar(
             x=country_performance.index,
-            y=country_performance['Close Rate %'],
-            title="Close Rate by Country (Top 15)",
-            labels={'x': 'Country', 'y': 'Close Rate %'},
-            color=country_performance['Close Rate %'],
+            y=country_performance['Tasa de Cierre %'],
+            title="Tasa de Cierre por País (Top 15)",
+            labels={'x': 'País', 'y': 'Tasa de Cierre %'},
+            color=country_performance['Tasa de Cierre %'],
             color_continuous_scale='Viridis'
         )
         fig.update_layout(xaxis_tickangle=-45)
@@ -1230,28 +1243,28 @@ def render_performance_benchmarks_c2(cohort):
     st.markdown("---")
     
     # Engagement distribution by geography
-    st.markdown("#### 📈 Engagement Distribution by Geography Tier")
+    st.markdown("#### 📈 Distribución de Compromiso por Nivel Geográfico")
     
     fig = px.box(
         cohort, x='geo_tier', y='engagement_score',
         color='geo_tier',
-        title="Engagement Score Distribution by Geography Tier",
-        labels={'geo_tier': 'Geography Tier', 'engagement_score': 'Engagement Score'}
+        title="Distribución de Puntuación de Compromiso por Nivel Geográfico",
+        labels={'geo_tier': 'Nivel Geográfico', 'engagement_score': 'Puntuación de Compromiso'}
     )
     st.plotly_chart(fig, use_container_width=True)
     
     st.markdown("---")
     
     # Segment × Geography heatmap
-    st.markdown("#### 🔥 Segment × Geography Performance Heatmap")
+    st.markdown("#### 🔥 Mapa de Calor de Rendimiento Segmento × Geografía")
     
     heatmap_data = cohort.groupby(['segment_c2', 'geo_tier']).size().reset_index(name='count')
     heatmap_pivot = heatmap_data.pivot(index='segment_c2', columns='geo_tier', values='count').fillna(0)
     
     fig = px.imshow(
         heatmap_pivot,
-        labels=dict(x="Geography Tier", y="Segment", color="Contacts"),
-        title="Contact Distribution: Segment × Geography Tier",
+        labels=dict(x="Nivel Geográfico", y="Segmento", color="Contactos"),
+        title="Distribución de Contactos: Segmento × Nivel Geográfico",
         color_continuous_scale='Blues',
         aspect="auto"
     )
@@ -1261,12 +1274,12 @@ def render_performance_benchmarks_c2(cohort):
     
     # Time to close by geography
     if 'days_to_close' in cohort.columns:
-        st.markdown("#### ⏱️ Time-to-Close Analysis by Geography")
+        st.markdown("#### ⏱️ Análisis de Tiempo hasta Cierre por Geografía")
         
         closed_cohort = cohort[cohort['days_to_close'].notna()]
         if len(closed_cohort) > 0:
             ttc_by_geo = closed_cohort.groupby('geo_tier')['days_to_close'].agg(['mean', 'median', 'count']).round(1)
-            ttc_by_geo.columns = ['Avg Days', 'Median Days', 'Closed Count']
+            ttc_by_geo.columns = ['Días Prom', 'Días Mediana', 'Conteo Cerrados']
             
             col1, col2 = st.columns(2)
             
@@ -1276,10 +1289,10 @@ def render_performance_benchmarks_c2(cohort):
             with col2:
                 fig = px.bar(
                     x=ttc_by_geo.index,
-                    y=ttc_by_geo['Avg Days'],
-                    title="Average Days to Close by Geography Tier",
-                    labels={'x': 'Geography Tier', 'y': 'Avg Days to Close'},
-                    color=ttc_by_geo['Avg Days'],
+                    y=ttc_by_geo['Días Prom'],
+                    title="Días Promedio hasta Cierre por Nivel Geográfico",
+                    labels={'x': 'Nivel Geográfico', 'y': 'Días Promedio hasta Cierre'},
+                    color=ttc_by_geo['Días Prom'],
                     color_continuous_scale='Reds'
                 )
                 st.plotly_chart(fig, use_container_width=True)
@@ -1287,7 +1300,7 @@ def render_performance_benchmarks_c2(cohort):
     st.markdown("---")
     
     # Key insights
-    st.markdown("#### 💡 Performance Insights")
+    st.markdown("#### 💡 Insights de Rendimiento")
     
     insights = []
     
@@ -1295,96 +1308,96 @@ def render_performance_benchmarks_c2(cohort):
     if len(benchmark_metrics) > 0:
         best_segment = benchmark_metrics['close_rate_pct'].idxmax()
         best_rate = benchmark_metrics['close_rate_pct'].max()
-        insights.append(f"🏆 **Best Performing Segment:** {best_segment} ({best_rate:.1f}% close rate)")
+        insights.append(f"🏆 **Mejor Segmento:** {best_segment} ({best_rate:.1f}% tasa de cierre)")
     
     # Best performing geography
     if len(geo_performance) > 0:
-        best_geo = geo_performance['Close Rate %'].idxmax()
-        best_geo_rate = geo_performance['Close Rate %'].max()
-        insights.append(f"🌍 **Best Performing Geography:** {best_geo} ({best_geo_rate:.1f}% close rate)")
+        best_geo = geo_performance['Tasa de Cierre %'].idxmax()
+        best_geo_rate = geo_performance['Tasa de Cierre %'].max()
+        insights.append(f"🌍 **Mejor Geografía:** {best_geo} ({best_geo_rate:.1f}% tasa de cierre)")
     
     # Best performing country
     if len(country_performance) > 0:
-        best_country = country_performance['Close Rate %'].idxmax()
-        best_country_rate = country_performance['Close Rate %'].max()
-        insights.append(f"🎯 **Best Performing Country:** {best_country} ({best_country_rate:.1f}% close rate)")
+        best_country = country_performance['Tasa de Cierre %'].idxmax()
+        best_country_rate = country_performance['Tasa de Cierre %'].max()
+        insights.append(f"🎯 **Mejor País:** {best_country} ({best_country_rate:.1f}% tasa de cierre)")
     
     # Geography diversity
     unique_countries = cohort['country_any'].nunique()
     unique_states = cohort['state_any'].nunique() if 'state_any' in cohort.columns else 0
-    insights.append(f"🌐 **Geographic Reach:** {unique_countries} countries, {unique_states} states/regions")
+    insights.append(f"🌐 **Alcance Geográfico:** {unique_countries} países, {unique_states} estados/regiones")
     
     if insights:
         for insight in insights:
             st.markdown(insight)
     else:
-        st.info("Not enough data for insights")
+        st.info("No hay suficientes datos para insights")
 
 def render_contact_lookup_tab_c2(cohort):
     """Render contact lookup tab"""
-    st.markdown("### 🔍 Individual Contact Lookup")
+    st.markdown("### 🔍 Búsqueda de Contacto Individual")
     
     if 'contact_id' not in cohort.columns:
-        st.warning("Contact ID not available in dataset.")
+        st.warning("ID de contacto no disponible en el dataset.")
         return
     
-    contact_id = st.text_input("Enter Contact ID:", placeholder="e.g., 12345")
+    contact_id = st.text_input("Ingresar ID de Contacto:", placeholder="ej., 12345")
     
     if contact_id:
         contact_id_str = str(contact_id).strip()
         matches = cohort[cohort['contact_id'].astype(str) == contact_id_str]
         
         if len(matches) == 0:
-            st.error(f"No contact found with ID: {contact_id}")
+            st.error(f"No se encontró contacto con ID: {contact_id}")
         else:
             contact = matches.iloc[0]
             
-            st.markdown("#### Contact Profile")
+            st.markdown("#### Perfil del Contacto")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.markdown("**Identification**")
-                st.write(f"**Contact ID:** {contact.get('contact_id', 'N/A')}")
-                st.write(f"**Segment:** {contact.get('segment_c2', 'N/A')}")
-                st.write(f"**Geography Tier:** {contact.get('geo_tier', 'N/A')}")
-                st.write(f"**Action:** {contact.get('segment_c2_action', 'N/A')}")
+                st.markdown("**Identificación**")
+                st.write(f"**ID de Contacto:** {contact.get('contact_id', 'N/A')}")
+                st.write(f"**Segmento:** {contact.get('segment_c2', 'N/A')}")
+                st.write(f"**Nivel Geográfico:** {contact.get('geo_tier', 'N/A')}")
+                st.write(f"**Acción:** {contact.get('segment_c2_action', 'N/A')}")
             
             with col2:
-                st.markdown("**Geography**")
-                st.write(f"**Country:** {contact.get('country_any', 'N/A')}")
-                st.write(f"**State:** {contact.get('state_any', 'N/A')}")
-                st.write(f"**City:** {contact.get('city_any', 'N/A')}")
+                st.markdown("**Geografía**")
+                st.write(f"**País:** {contact.get('country_any', 'N/A')}")
+                st.write(f"**Estado:** {contact.get('state_any', 'N/A')}")
+                st.write(f"**Ciudad:** {contact.get('city_any', 'N/A')}")
             
             with col3:
-                st.markdown("**Engagement**")
-                st.write(f"**Sessions:** {int(contact.get('num_sessions', 0)):,}")
-                st.write(f"**Pageviews:** {int(contact.get('num_pageviews', 0)):,}")
-                st.write(f"**Forms:** {int(contact.get('forms_submitted', 0)):,}")
-                st.write(f"**Engagement Score:** {contact.get('engagement_score', 0):.2f}")
-                st.write(f"**High Engager:** {'Yes' if contact.get('is_high_engager') else 'No'}")
+                st.markdown("**Compromiso**")
+                st.write(f"**Sesiones:** {int(contact.get('num_sessions', 0)):,}")
+                st.write(f"**Páginas Vistas:** {int(contact.get('num_pageviews', 0)):,}")
+                st.write(f"**Formularios:** {int(contact.get('forms_submitted', 0)):,}")
+                st.write(f"**Puntuación de Compromiso:** {contact.get('engagement_score', 0):.2f}")
+                st.write(f"**Alto Compromiso:** {'Sí' if contact.get('is_high_engager') else 'No'}")
             
             st.markdown("---")
-            st.markdown("#### Business Outcomes")
+            st.markdown("#### Resultados de Negocio")
             
             col1, col2 = st.columns(2)
             
             with col1:
-                is_closed = "Yes" if pd.notna(contact.get('close_date')) else "No"
-                st.write(f"**Closed:** {is_closed}")
+                is_closed = "Sí" if pd.notna(contact.get('close_date')) else "No"
+                st.write(f"**Cerrado:** {is_closed}")
                 
                 if 'lifecycle_stage' in contact.index:
-                    st.write(f"**Lifecycle Stage:** {contact.get('lifecycle_stage', 'N/A')}")
+                    st.write(f"**Etapa del Ciclo de Vida:** {contact.get('lifecycle_stage', 'N/A')}")
                 
                 if 'periodo_ingreso' in contact.index:
                     st.write(f"**Periodo de Ingreso:** {contact.get('periodo_ingreso', 'N/A')}")
             
             with col2:
                 if pd.notna(contact.get('days_to_close')):
-                    st.write(f"**Days to Close:** {contact.get('days_to_close', 0):.0f}")
-                    st.write(f"**TTC Bucket:** {contact.get('ttc_bucket', 'N/A')}")
+                    st.write(f"**Días hasta Cierre:** {contact.get('days_to_close', 0):.0f}")
+                    st.write(f"**Categoría TTC:** {contact.get('ttc_bucket', 'N/A')}")
                 
                 # Likelihood is still available in data but not prominently displayed
                 if 'likelihood_pct' in contact.index and pd.notna(contact.get('likelihood_pct')):
-                    st.write(f"**Likelihood to Close:** {contact.get('likelihood_pct', 0):.1f}%")
+                    st.write(f"**Probabilidad de Cierre:** {contact.get('likelihood_pct', 0):.1f}%")
 

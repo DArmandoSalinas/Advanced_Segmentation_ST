@@ -1,6 +1,6 @@
 """
-Cluster 1: Socially Engaged Prospects
-Identifies and segments prospects with social media activity using historical data analysis
+Cluster 1: Prospectos Socialmente Comprometidos
+Identifica y segmenta prospectos con actividad en redes sociales usando análisis de datos históricos
 """
 
 import streamlit as st
@@ -247,7 +247,7 @@ def process_cluster1_data(_data, cache_key=None):
         cluster_1A = cluster_stats['combined'].idxmax()
         cluster_1B = [c for c in cluster_stats.index if c != cluster_1A][0]
         
-        label_map = {cluster_1A: '1A', cluster_1B: '1B'}
+        label_map = {cluster_1A: '1A - Alto Compromiso', cluster_1B: '1B - Bajo Compromiso'}
         cohort['segment_engagement'] = cohort['cluster'].map(label_map)
         
         # Platform tagging
@@ -483,8 +483,8 @@ def create_cluster1_xlsx_export(cohort):
         
         # 29. Run metadata
         meta = pd.DataFrame({
-            'Field': ['Export Date', 'Total Contacts', 'Filtered Contacts', 'Segments'],
-            'Value': [
+            'Campo': ['Fecha de Exportación', 'Total Contactos', 'Contactos Filtrados', 'Segmentos'],
+            'Valor': [
                 pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'),
                 str(len(cohort_export)),
                 str(len(cohort_export)),
@@ -499,99 +499,99 @@ def create_cluster1_xlsx_export(cohort):
 def render_cluster1(data):
     """Render Cluster 1 analysis interface"""
     
-    st.markdown("## 📱 Cluster 1: Socially Engaged Prospects")
+    st.markdown("## 📱 Cluster 1: Prospectos Socialmente Comprometidos")
     
     # About this analysis
-    with st.expander("ℹ️ About This Analysis", expanded=False):
+    with st.expander("ℹ️ Acerca de Este Análisis", expanded=False):
         st.markdown("""
-        ### 🎯 What This Cluster Does
-        **Identifies prospects with social media activity** using comprehensive historical data analysis and multi-platform detection.
+        ### 🎯 Qué Hace Este Cluster
+        **Identifica prospectos con actividad en redes sociales** usando análisis integral de datos históricos y detección multi-plataforma.
         
-        ### 👥 Who Should Use This
-        - **Social Media Teams** - Optimize platform strategy
-        - **Digital Marketing** - Allocate social media budget
-        - **Retargeting Campaigns** - Target by platform preference
+        ### 👥 Quién Debe Usar Esto
+        - **Equipos de Redes Sociales** - Optimizar estrategia por plataforma
+        - **Marketing Digital** - Asignar presupuesto de redes sociales
+        - **Campañas de Remarketing** - Dirigir por preferencia de plataforma
         
-        ### 🔑 Key Questions Answered
-        - Which social platforms drive the most engagement?
-        - Do Instagram leads close faster than Facebook leads?
-        - What's the ROI of each social media platform?
-        - Which platform + engagement combo performs best?
+        ### 🔑 Preguntas Clave Respondidas
+        - ¿Qué plataformas sociales impulsan más compromiso?
+        - ¿Los leads de Instagram cierran más rápido que los de Facebook?
+        - ¿Cuál es el ROI de cada plataforma de redes sociales?
+        - ¿Qué combinación de plataforma + compromiso funciona mejor?
         
-        ### 📊 Segments Defined
-        - **1A (High Engagement)** - Active social users with strong interaction (sessions, forms, pageviews)
-        - **1B (Low Engagement)** - Social presence but minimal website engagement
-        - **Platform Overlays** - Combined tags like "1A + Instagram", "1B + Facebook" for precise targeting
+        ### 📊 Segmentos Definidos
+        - **1A (Alto Compromiso)** - Usuarios sociales activos con fuerte interacción (sesiones, formularios, páginas vistas)
+        - **1B (Bajo Compromiso)** - Presencia social pero compromiso mínimo en el sitio web
+        - **Superposiciones de Plataforma** - Etiquetas combinadas como "1A + Instagram", "1B + Facebook" para targeting preciso
         
-        ### 💡 Example Insight
-        *"1A + Instagram contacts have a 35% close rate and close 20 days faster than 1B + Facebook"*
-        → **Action:** Increase Instagram ad spend, create 1A-specific content
+        ### 💡 Ejemplo de Insight
+        *"Los contactos 1A + Instagram tienen una tasa de cierre del 35% y cierran 20 días más rápido que 1B + Facebook"*
+        → **Acción:** Aumentar gasto en anuncios de Instagram, crear contenido específico para 1A
         """)
     
     st.markdown("---")
     
     if data is None:
-        st.error("⚠️ Data not loaded.")
+        st.error("⚠️ Datos no cargados.")
         return
     
     # Process data with cache busting based on data length
     # This ensures the cache refreshes when global filters change the data
     cache_key = f"c1_{len(data)}_{data['Record ID'].iloc[0] if 'Record ID' in data.columns else 'na'}"
-    with st.spinner("Processing Cluster 1 data..."):
+    with st.spinner("Procesando datos del Cluster 1..."):
         cohort = process_cluster1_data(data, cache_key)
     
     # Show contact count AFTER core filters (APREU + removing other/subscriber)
     if data is not None:
         active_filters = sum(1 for k in st.session_state.keys() if k.startswith('filter_'))
         if active_filters > 0:
-            st.info(f"🔍 Analyzing {len(cohort):,} contacts after applying core filters (APREU, excluding 'other'/'subscriber') + global filters")
+            st.info(f"🔍 Analizando {len(cohort):,} contactos después de aplicar filtros principales (APREU, excluyendo 'other'/'subscriber') + filtros globales")
         else:
-            st.info(f"📊 Analyzing {len(cohort):,} contacts after applying core filters (APREU, excluding 'other'/'subscriber')")
+            st.info(f"📊 Analizando {len(cohort):,} contactos después de aplicar filtros principales (APREU, excluyendo 'other'/'subscriber')")
     
     if len(cohort) == 0:
-        st.warning("No socially engaged prospects found with current filters.")
+        st.warning("No se encontraron prospectos socialmente comprometidos con los filtros actuales.")
         return
     
     # Add cluster-specific filters
-    with st.expander("🎛️ Cluster 1 Specific Filters", expanded=False):
+    with st.expander("🎛️ Filtros Específicos del Cluster 1", expanded=False):
         col1, col2 = st.columns(2)
         
         with col1:
             # Segment filter
             available_segments = sorted(cohort['segment_engagement'].unique())
             selected_segments = st.multiselect(
-                "Filter by Segment:",
+                "Filtrar por Segmento:",
                 options=available_segments,
                 default=available_segments,
-                help="Select engagement segments to include"
+                help="Seleccionar segmentos de compromiso a incluir"
             )
             
             # Platform filter
             available_platforms = sorted(cohort['platform_tag'].unique())
             selected_platforms = st.multiselect(
-                "Filter by Platform:",
+                "Filtrar por Plataforma:",
                 options=available_platforms,
                 default=available_platforms,
-                help="Select platforms to include"
+                help="Seleccionar plataformas a incluir"
             )
         
         with col2:
             # Social clicks filter
             min_social_clicks = st.number_input(
-                "Min Social Clicks:", 
+                "Mín. Clics Sociales:", 
                 min_value=0, 
                 value=0,
-                help="Filter contacts with at least this many social clicks"
+                help="Filtrar contactos con al menos esta cantidad de clics sociales"
             )
             
             # Engagement score filter
             if 'engagement_score' in cohort.columns:
                 min_engagement = st.slider(
-                    "Min Engagement Score:",
+                    "Puntuación Mín. de Compromiso:",
                     min_value=float(cohort['engagement_score'].min()),
                     max_value=float(cohort['engagement_score'].max()),
                     value=float(cohort['engagement_score'].min()),
-                    help="Filter by minimum engagement score"
+                    help="Filtrar por puntuación mínima de compromiso"
                 )
             else:
                 min_engagement = 0
@@ -606,14 +606,14 @@ def render_cluster1(data):
         if 'engagement_score' in cohort.columns and min_engagement > 0:
             cohort_filtered = cohort_filtered[cohort_filtered['engagement_score'] >= min_engagement]
         
-        st.info(f"✅ Showing {len(cohort_filtered):,} of {len(cohort):,} contacts after cluster filters")
+        st.info(f"✅ Mostrando {len(cohort_filtered):,} de {len(cohort):,} contactos después de filtros del cluster")
     
     # Use filtered cohort for all subsequent analysis
     cohort = cohort_filtered
     
     # Export functionality
-    with st.expander("📥 Export Data", expanded=False):
-        st.markdown("**Download filtered data:**")
+    with st.expander("📥 Exportar Datos", expanded=False):
+        st.markdown("**Descargar datos filtrados:**")
         
         col1, col2 = st.columns(2)
         
@@ -659,7 +659,7 @@ def render_cluster1(data):
             
             csv_data = df_export.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
-                label="📄 Download Full Data (CSV)",
+                    label="📄 Descargar Datos Completos (CSV)",
                 data=csv_data.encode('utf-8'),
                 file_name=f"cluster1_full_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
@@ -668,22 +668,22 @@ def render_cluster1(data):
         
         with col2:
             # Export comprehensive XLSX workbook
-            with st.spinner("Generating comprehensive Excel workbook..."):
+            with st.spinner("Generando libro de trabajo Excel integral..."):
                 xlsx_data = create_cluster1_xlsx_export(cohort)
                 st.download_button(
-                    label="📊 Download Comprehensive Workbook (XLSX) - 25+ Sheets",
+                    label="📊 Descargar Libro de Trabajo Integral (XLSX) - 25+ Hojas",
                     data=xlsx_data,
                     file_name=f"cluster1_summary_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
-                    help="Comprehensive analysis workbook with 25+ sheets: counts, engagement metrics, lifecycle, closure stats, platform breakdowns, and more!"
+                    help="Libro de trabajo de análisis integral con 25+ hojas: conteos, métricas de compromiso, ciclo de vida, estadísticas de cierre, desgloses por plataforma, ¡y más!"
                 )
     
     # Create tabs for different analyses
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
-        "📊 Overview", "🎯 Segment Analysis", "🏷️ Platform Analysis", 
-        "💰 Business Outcomes", "⚡ Fast/Slow Closers", "🌐 Online vs Offline",
-        "📅 Academic Period", "🔬 Performance Benchmarks", "🔍 Contact Lookup"
+        "📊 Resumen", "🎯 Análisis de Segmento", "🏷️ Análisis de Plataforma", 
+        "💰 Resultados de Negocio", "⚡ Cerradores Rápidos/Lentos", "🌐 En Línea vs Fuera de Línea",
+        "📅 Período Académico", "🔬 Benchmarks de Rendimiento", "🔍 Búsqueda de Contactos"
     ])
     
     with tab1:
@@ -715,25 +715,25 @@ def render_cluster1(data):
 
 def render_overview_tab(cohort):
     """Render overview tab"""
-    st.markdown("### 📊 Executive Summary")
+    st.markdown("### 📊 Resumen Ejecutivo")
     
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Socially Engaged", f"{len(cohort):,}")
+        st.metric("Total Socialmente Comprometidos", f"{len(cohort):,}")
     
     with col2:
-        seg_1a_count = (cohort['segment_engagement'] == '1A').sum()
-        st.metric("1A (High Engagement)", f"{seg_1a_count:,}")
+        seg_1a_count = (cohort['segment_engagement'] == '1A - Alto Compromiso').sum()
+        st.metric("1A (Alto Compromiso)", f"{seg_1a_count:,}")
     
     with col3:
-        seg_1b_count = (cohort['segment_engagement'] == '1B').sum()
-        st.metric("1B (Low Engagement)", f"{seg_1b_count:,}")
+        seg_1b_count = (cohort['segment_engagement'] == '1B - Bajo Compromiso').sum()
+        st.metric("1B (Bajo Compromiso)", f"{seg_1b_count:,}")
     
     with col4:
         close_rate = calculate_close_rate(cohort)
-        st.metric("Overall Close Rate", f"{close_rate:.1f}%")
+        st.metric("Tasa de Cierre General", f"{close_rate:.1f}%")
     
     st.markdown("---")
     
@@ -741,19 +741,19 @@ def render_overview_tab(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Engagement Segment Distribution")
-        fig = create_segment_pie_chart(cohort, 'segment_engagement', title="1A vs 1B Distribution")
+        st.markdown("#### Distribución de Segmentos de Compromiso")
+        fig = create_segment_pie_chart(cohort, 'segment_engagement', title="Distribución por Compromiso - Leyenda: 1A=Alto Compromiso, 1B=Bajo Compromiso")
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("#### Top Platforms")
+        st.markdown("#### Principales Plataformas")
         platform_counts = cohort['platform_tag'].value_counts().head(10)
         fig = px.bar(
             x=platform_counts.values,
             y=platform_counts.index,
             orientation='h',
-            title="Top 10 Platform Tags",
-            labels={'x': 'Contacts', 'y': 'Platform'},
+            title="Top 10 Etiquetas de Plataformas",
+            labels={'x': 'Contactos', 'y': 'Plataforma'},
             color=platform_counts.values,
             color_continuous_scale='Viridis'
         )
@@ -761,25 +761,25 @@ def render_overview_tab(cohort):
         st.plotly_chart(fig, use_container_width=True)
     
     # Platform mention summary
-    st.markdown("#### Platform Detection Summary")
+    st.markdown("#### Resumen de Detección de Plataformas")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         contacts_with_platform = (cohort['platform_mentions_total'] > 0).sum()
-        st.metric("Contacts with Platform Signals", f"{contacts_with_platform:,}")
+        st.metric("Contactos con Señales de Plataforma", f"{contacts_with_platform:,}")
     
     with col2:
         contacts_with_2plus = (cohort['platform_diversity'] >= 2).sum()
-        st.metric("Contacts with 2+ Platforms", f"{contacts_with_2plus:,}")
+        st.metric("Contactos con 2+ Plataformas", f"{contacts_with_2plus:,}")
     
     with col3:
         avg_diversity = cohort['platform_diversity'].mean()
-        st.metric("Avg Platform Diversity", f"{avg_diversity:.1f}")
+        st.metric("Diversidad Promedio de Plataformas", f"{avg_diversity:.1f}")
 
 def render_segment_analysis_tab(cohort):
     """Render segment analysis tab"""
-    st.markdown("### 🎯 1A vs 1B Segment Comparison")
+    st.markdown("### 🎯 1A vs 1B Comparación de Segmentos")
     
     # Segment comparison metrics
     segment_comparison = cohort.groupby('segment_engagement').agg({
@@ -808,29 +808,29 @@ def render_segment_analysis_tab(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Engagement Score Distribution")
+        st.markdown("#### Distribución de Puntuación de Compromiso")
         fig = px.box(
             cohort, x='segment_engagement', y='engagement_score',
             color='segment_engagement',
-            title="Engagement Score by Segment",
-            labels={'segment_engagement': 'Segment', 'engagement_score': 'Engagement Score'},
-            color_discrete_map={'1A': '#2ecc71', '1B': '#e74c3c'}
+            title="Puntuación de Compromiso por Segmento (1A=Alto Compromiso, 1B=Bajo Compromiso)",
+            labels={'segment_engagement': 'Segmento', 'engagement_score': 'Puntuación de Compromiso'},
+            color_discrete_map={'1A - Alto Compromiso': '#2ecc71', '1B - Bajo Compromiso': '#e74c3c'}
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("#### Sessions Distribution")
+        st.markdown("#### Distribución de Sesiones")
         fig = px.box(
             cohort, x='segment_engagement', y='num_sessions',
             color='segment_engagement',
-            title="Number of Sessions by Segment",
-            labels={'segment_engagement': 'Segment', 'num_sessions': 'Sessions'},
-            color_discrete_map={'1A': '#2ecc71', '1B': '#e74c3c'}
+            title="Número de Sesiones por Segmento (1A=Alto Compromiso, 1B=Bajo Compromiso)",
+            labels={'segment_engagement': 'Segmento', 'num_sessions': 'Sesiones'},
+            color_discrete_map={'1A - Alto Compromiso': '#2ecc71', '1B - Bajo Compromiso': '#e74c3c'}
         )
         st.plotly_chart(fig, use_container_width=True)
     
     # Lifecycle stage distribution
-    st.markdown("#### Lifecycle Stage Distribution by Segment")
+    st.markdown("#### Distribución de Etapa del Ciclo de Vida por Segmento")
     
     if 'lifecycle_stage' in cohort.columns:
         lifecycle_dist = pd.crosstab(
@@ -842,18 +842,18 @@ def render_segment_analysis_tab(cohort):
         fig = px.bar(
             lifecycle_dist,
             barmode='group',
-            title="Lifecycle Stage Distribution (%)",
-            labels={'value': 'Percentage', 'variable': 'Lifecycle Stage'},
+            title="Distribución de Etapa del Ciclo de Vida (%)",
+            labels={'value': 'Porcentaje', 'variable': 'Etapa del Ciclo de Vida'},
             color_discrete_sequence=px.colors.qualitative.Set2
         )
         st.plotly_chart(fig, use_container_width=True)
 
 def render_platform_analysis_tab(cohort):
     """Render platform analysis tab"""
-    st.markdown("### 🏷️ Platform Analysis")
+    st.markdown("### 🏷️ Análisis de Plataformas")
     
     # Overlay segment distribution
-    st.markdown("#### Top Overlay Segments (Engagement + Platform)")
+    st.markdown("#### Principales Segmentos de Superposición (Compromiso + Plataforma)")
     
     overlay_counts = cohort['segment_overlay'].value_counts().head(15)
     
@@ -861,8 +861,8 @@ def render_platform_analysis_tab(cohort):
         x=overlay_counts.values,
         y=overlay_counts.index,
         orientation='h',
-        title="Top 15 Overlay Segments",
-        labels={'x': 'Contacts', 'y': 'Overlay Segment'},
+        title="Top 15 Segmentos de Superposición",
+        labels={'x': 'Contactos', 'y': 'Segmento de Superposición'},
         color=overlay_counts.values,
         color_continuous_scale='Blues'
     )
@@ -875,33 +875,33 @@ def render_platform_analysis_tab(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Platform Distribution in 1A")
-        seg_1a = cohort[cohort['segment_engagement'] == '1A']
+        st.markdown("#### Distribución de Plataformas en 1A")
+        seg_1a = cohort[cohort['segment_engagement'] == '1A - Alto Compromiso']
         platform_1a = seg_1a['platform_tag'].value_counts().head(8)
         
         fig = px.pie(
             values=platform_1a.values,
             names=platform_1a.index,
-            title="1A Platform Mix",
+            title="Mezcla de Plataformas 1A",
             hole=0.3
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("#### Platform Distribution in 1B")
-        seg_1b = cohort[cohort['segment_engagement'] == '1B']
+        st.markdown("#### Distribución de Plataformas en 1B")
+        seg_1b = cohort[cohort['segment_engagement'] == '1B - Bajo Compromiso']
         platform_1b = seg_1b['platform_tag'].value_counts().head(8)
         
         fig = px.pie(
             values=platform_1b.values,
             names=platform_1b.index,
-            title="1B Platform Mix",
+            title="Mezcla de Plataformas 1B",
             hole=0.3
         )
         st.plotly_chart(fig, use_container_width=True)
     
     # Platform mention details
-    st.markdown("#### Platform Mention Statistics")
+    st.markdown("#### Estadísticas de Menciones de Plataformas")
     
     platform_stats = []
     for platform in PLATFORM_KEYWORDS.keys():
@@ -923,17 +923,17 @@ def render_platform_analysis_tab(cohort):
 
 def render_fast_slow_closers_c1(cohort):
     """Render fast/slow closers analysis"""
-    st.markdown("### ⚡ Fast vs Slow Closers Analysis")
-    st.markdown("Identify which combinations close fastest to optimize your strategy")
+    st.markdown("### ⚡ Análisis de Cerradores Rápidos vs Lentos")
+    st.markdown("Identifica qué combinaciones cierran más rápido para optimizar tu estrategia")
     
     # Filter to closed contacts
     closed = cohort[cohort['close_date'].notna()].copy()
     
     if len(closed) == 0:
-        st.warning("No closed contacts available for analysis.")
+        st.warning("No hay contactos cerrados disponibles para análisis.")
         return
     
-    st.markdown(f"**Analyzing {len(closed):,} closed contacts**")
+    st.markdown(f"**Analizando {len(closed):,} contactos cerrados**")
     
     # Define fast and slow
     fast_threshold = 60
@@ -948,23 +948,23 @@ def render_fast_slow_closers_c1(cohort):
     with col1:
         fast_count = (closed['closure_speed'] == 'Fast (≤60 days)').sum()
         fast_pct = (fast_count / len(closed) * 100)
-        st.metric("Fast Closers", f"{fast_count:,}", delta=f"{fast_pct:.1f}%")
+        st.metric("Cerradores Rápidos", f"{fast_count:,}", delta=f"{fast_pct:.1f}%")
     
     with col2:
         medium_count = (closed['closure_speed'] == 'Medium').sum()
         medium_pct = (medium_count / len(closed) * 100)
-        st.metric("Medium Closers", f"{medium_count:,}", delta=f"{medium_pct:.1f}%")
+        st.metric("Cerradores Medios", f"{medium_count:,}", delta=f"{medium_pct:.1f}%")
     
     with col3:
         slow_count = (closed['closure_speed'] == 'Slow (>180 days)').sum()
         slow_pct = (slow_count / len(closed) * 100)
-        st.metric("Slow Closers", f"{slow_count:,}", delta=f"{slow_pct:.1f}%")
+        st.metric("Cerradores Lentos", f"{slow_count:,}", delta=f"{slow_pct:.1f}%")
     
     st.markdown("---")
     
     # Fast closers: Segment × Platform analysis
     st.markdown("#### ⚡ Fast Closers (≤60 days): Engagement × Platform")
-    st.markdown("Which combinations close fastest?")
+    st.markdown("¿Qué combinaciones cierran más rápido?")
     
     fast_closers = closed[closed['closure_speed'] == 'Fast (≤60 days)']
     
@@ -977,15 +977,15 @@ def render_fast_slow_closers_c1(cohort):
             margins_name='Total'
         )
         
-        st.markdown("**Counts:**")
+        st.markdown("**Conteos:**")
         st.dataframe(fast_crosstab, use_container_width=True)
         
         # Heatmap
         try:
             fig = px.imshow(
                 fast_crosstab.iloc[:-1, :-1],  # Exclude margins
-                labels=dict(x="Platform", y="Segment", color="Count"),
-                title="Fast Closers Heatmap: Engagement × Platform",
+                labels=dict(x="Plataforma", y="Segmento", color="Conteo"),
+                title="Mapa de Calor Cerradores Rápidos: Compromiso × Plataforma",
                 color_continuous_scale='Greens',
                 aspect="auto"
             )
@@ -994,13 +994,13 @@ def render_fast_slow_closers_c1(cohort):
             # If heatmap fails, show bar chart instead
             pass
     else:
-        st.info("No fast closers in this dataset.")
+        st.info("No hay cerradores rápidos en este dataset.")
     
     st.markdown("---")
     
     # Slow closers: Segment × Platform analysis
     st.markdown("#### 🐌 Slow Closers (>180 days): Engagement × Platform")
-    st.markdown("Which combinations need more attention?")
+    st.markdown("¿Qué combinaciones necesitan más atención?")
     
     slow_closers = closed[closed['closure_speed'] == 'Slow (>180 days)']
     
@@ -1013,15 +1013,15 @@ def render_fast_slow_closers_c1(cohort):
             margins_name='Total'
         )
         
-        st.markdown("**Counts:**")
+        st.markdown("**Conteos:**")
         st.dataframe(slow_crosstab, use_container_width=True)
         
         # Heatmap
         try:
             fig = px.imshow(
                 slow_crosstab.iloc[:-1, :-1],  # Exclude margins
-                labels=dict(x="Platform", y="Segment", color="Count"),
-                title="Slow Closers Heatmap: Engagement × Platform",
+                labels=dict(x="Plataforma", y="Segmento", color="Conteo"),
+                title="Mapa de Calor Cerradores Lentos: Compromiso × Plataforma",
                 color_continuous_scale='Reds',
                 aspect="auto"
             )
@@ -1030,12 +1030,12 @@ def render_fast_slow_closers_c1(cohort):
             # If heatmap fails, show bar chart instead
             pass
     else:
-        st.info("No slow closers in this dataset.")
+        st.info("No hay cerradores lentos en este dataset.")
     
     st.markdown("---")
     
     # Insights
-    st.markdown("#### 💡 Key Insights")
+    st.markdown("#### 💡 Insights Clave")
     
     insights = []
     
@@ -1064,14 +1064,14 @@ def render_fast_slow_closers_c1(cohort):
         for insight in insights:
             st.markdown(insight)
     else:
-        st.info("Not enough data for insights")
+        st.info("No hay suficientes datos para insights")
 
 def render_outcomes_tab(cohort):
     """Render business outcomes tab"""
-    st.markdown("### 💰 Business Outcomes & Performance")
+    st.markdown("### 💰 Resultados de Negocio y Rendimiento")
     
     # Lifecycle Stage Analysis
-    st.markdown("#### 🔄 Lifecycle Stage Distribution")
+    st.markdown("#### 🔄 Distribución de Etapa del Ciclo de Vida")
     
     if 'lifecycle_stage' in cohort.columns:
         lifecycle_counts = cohort['lifecycle_stage'].value_counts().head(10)
@@ -1083,8 +1083,8 @@ def render_outcomes_tab(cohort):
                 x=lifecycle_counts.values,
                 y=lifecycle_counts.index,
                 orientation='h',
-                title="Top 10 Lifecycle Stages",
-                labels={'x': 'Contacts', 'y': 'Lifecycle Stage'},
+                title="Top 10 Etapas del Ciclo de Vida",
+                labels={'x': 'Contactos', 'y': 'Etapa del Ciclo de Vida'},
                 color=lifecycle_counts.values,
                 color_continuous_scale='Viridis'
             )
@@ -1092,13 +1092,13 @@ def render_outcomes_tab(cohort):
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.markdown("**Stage Distribution:**")
+            st.markdown("**Distribución por Etapa:**")
             for stage, count in lifecycle_counts.head(5).items():
                 pct = (count / len(cohort) * 100)
                 st.metric(stage, f"{count:,}", delta=f"{pct:.1f}%")
         
         # Lifecycle by segment
-        st.markdown("**Lifecycle Stage by Engagement Segment:**")
+        st.markdown("**Etapa del Ciclo de Vida por Segmento de Compromiso:**")
         
         lifecycle_by_segment = pd.crosstab(
             cohort['lifecycle_stage'],
@@ -1114,10 +1114,10 @@ def render_outcomes_tab(cohort):
         
         st.markdown("---")
     else:
-        st.info("Lifecycle stage data not available")
+        st.info("Datos de etapa del ciclo de vida no disponibles")
     
     # Traffic Source Analysis
-    st.markdown("#### 🔗 Traffic Source Performance")
+    st.markdown("#### 🔗 Rendimiento de Fuente de Tráfico")
     
     if 'latest_source' in cohort.columns:
         top_sources = cohort['latest_source'].value_counts().head(10)
@@ -1131,15 +1131,15 @@ def render_outcomes_tab(cohort):
             avg_engagement = source_contacts['engagement_score'].mean() if 'engagement_score' in source_contacts.columns else 0
             
             source_performance.append({
-                'Traffic Source': source,
-                'Contacts': len(source_contacts),
-                'Closed': closed,
-                'Close Rate %': round(close_rate, 1),
-                'Avg Engagement': round(avg_engagement, 2)
+                'Fuente de Tráfico': source,
+                'Contactos': len(source_contacts),
+                'Cerrados': closed,
+                'Tasa de Cierre %': round(close_rate, 1),
+                'Compromiso Prom.': round(avg_engagement, 2)
             })
         
         if source_performance:
-            source_df = pd.DataFrame(source_performance).sort_values('Close Rate %', ascending=False)
+            source_df = pd.DataFrame(source_performance).sort_values('Tasa de Cierre %', ascending=False)
             st.dataframe(source_df, use_container_width=True)
         
         st.markdown("---")
@@ -1148,25 +1148,25 @@ def render_outcomes_tab(cohort):
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        seg_1a = cohort[cohort['segment_engagement'] == '1A']
+        seg_1a = cohort[cohort['segment_engagement'] == '1A - Alto Compromiso']
         close_rate_1a = calculate_close_rate(seg_1a)
         st.metric("1A Close Rate", f"{close_rate_1a:.1f}%")
     
     with col2:
-        seg_1b = cohort[cohort['segment_engagement'] == '1B']
+        seg_1b = cohort[cohort['segment_engagement'] == '1B - Bajo Compromiso']
         close_rate_1b = calculate_close_rate(seg_1b)
         st.metric("1B Close Rate", f"{close_rate_1b:.1f}%")
     
     with col3:
         if 'likelihood_to_close_norm' in cohort.columns:
             avg_likelihood = cohort['likelihood_to_close_norm'].mean() * 100
-            st.metric("Avg Likelihood to Close", f"{avg_likelihood:.1f}%")
+            st.metric("Probabilidad Promedio de Cierre", f"{avg_likelihood:.1f}%")
     
     st.markdown("---")
     
     # Time to close analysis
     if 'ttc_bucket' in cohort.columns:
-        st.markdown("#### Time-to-Close Analysis")
+        st.markdown("#### Análisis de Tiempo hasta Cierre")
         
         ttc_dist = pd.crosstab(
             cohort['segment_engagement'],
@@ -1182,15 +1182,15 @@ def render_outcomes_tab(cohort):
         fig = px.bar(
             ttc_dist,
             barmode='group',
-            title="Time-to-Close Distribution by Segment (%)",
-            labels={'value': 'Percentage', 'variable': 'TTC Bucket'},
+            title="Distribución de Tiempo hasta Cierre por Segmento (%)",
+            labels={'value': 'Porcentaje', 'variable': 'Grupo TTC'},
             color_discrete_sequence=['#2ecc71', '#f39c12', '#e67e22', '#e74c3c', '#95a5a6']
         )
         st.plotly_chart(fig, use_container_width=True)
         
         # Average days to close
         if 'days_to_close' in cohort.columns:
-            st.markdown("#### Average Days to Close (Closed Contacts Only)")
+            st.markdown("#### Días Promedio hasta Cierre (Solo Contactos Cerrados)")
             
             closed_cohort = cohort[cohort['days_to_close'].notna()]
             if len(closed_cohort) > 0:
@@ -1200,20 +1200,20 @@ def render_outcomes_tab(cohort):
     st.markdown("---")
     
     # Top performing overlays
-    st.markdown("#### Top Performing Overlay Segments")
+    st.markdown("#### Segmentos de Superposición con Mejor Rendimiento")
     
     overlay_performance = cohort.groupby('segment_overlay').agg({
         'contact_id': 'count',
         'close_date': lambda x: x.notna().sum()
     })
-    overlay_performance.columns = ['Total', 'Closed']
-    overlay_performance['Close Rate %'] = (
-        overlay_performance['Closed'] / overlay_performance['Total'] * 100
+    overlay_performance.columns = ['Total', 'Cerrados']
+    overlay_performance['Tasa de Cierre %'] = (
+        overlay_performance['Cerrados'] / overlay_performance['Total'] * 100
     ).round(1)
     
     # Filter to segments with at least 20 contacts
     overlay_performance = overlay_performance[overlay_performance['Total'] >= 20]
-    overlay_performance = overlay_performance.sort_values('Close Rate %', ascending=False).head(15)
+    overlay_performance = overlay_performance.sort_values('Tasa de Cierre %', ascending=False).head(15)
     
     st.dataframe(overlay_performance, use_container_width=True)
 
@@ -1348,18 +1348,18 @@ def visualize_source_journey(contact_id, cohort, raw_data=None):
 
 def render_online_offline_analysis_tab(cohort):
     """Render online vs offline analysis tab"""
-    st.markdown("### 🌐 Online vs Offline Engagement Analysis")
-    st.markdown("Understand the mix of online (social) and offline touchpoints in your prospect engagement")
+    st.markdown("### 🌐 Análisis de Compromiso En Línea vs Fuera de Línea")
+    st.markdown("Comprende la mezcla de puntos de contacto en línea (sociales) y fuera de línea en el compromiso de tus prospectos")
     
     # Check if offline data is available
     if 'offline_type' not in cohort.columns:
-        st.warning("⚠️ Offline source data not available in this dataset")
+        st.warning("⚠️ Datos de fuente fuera de línea no disponibles en este dataset")
         return
     
     st.markdown("---")
     
     # 1. Overall online vs offline breakdown
-    st.markdown("#### 📊 Overall Online vs Offline Distribution")
+    st.markdown("#### 📊 Distribución General En Línea vs Fuera de Línea")
     
     offline_counts = cohort['offline_type'].value_counts()
     
@@ -1369,13 +1369,13 @@ def render_online_offline_analysis_tab(cohort):
         fig = px.pie(
             values=offline_counts.values,
             names=offline_counts.index,
-            title="How Many Contacts Have Offline Touchpoints?",
+            title="¿Cuántos Contactos Tienen Puntos de Contacto Fuera de Línea?",
             color_discrete_sequence=['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("**Your Contacts:**")
+        st.markdown("**Tus Contactos:**")
         for offline_type, count in offline_counts.items():
             pct = (count / len(cohort) * 100)
             st.write(f"• {offline_type}: {count:,} ({pct:.0f}%)")
@@ -1383,8 +1383,8 @@ def render_online_offline_analysis_tab(cohort):
     st.markdown("---")
     
     # 1b. Offline Interaction Intensity (NEW - based on historical data)
-    st.markdown("#### 🔥 Offline Interaction Intensity (Historical Mentions)")
-    st.markdown("*How many times did contacts interact with offline sources?*")
+    st.markdown("#### 🔥 Intensidad de Interacción Fuera de Línea (Menciones Históricas)")
+    st.markdown("*¿Cuántas veces interactuaron los contactos con fuentes fuera de línea?*")
     
     if 'offline_intensity' in cohort.columns:
         intensity_counts = cohort['offline_intensity'].value_counts()
@@ -1398,8 +1398,8 @@ def render_online_offline_analysis_tab(cohort):
             fig = px.bar(
                 x=intensity_counts.index,
                 y=intensity_counts.values,
-                title="Offline Interaction Intensity Distribution",
-                labels={'x': 'Intensity Level', 'y': 'Number of Contacts'},
+                title="Distribución de Intensidad de Interacción Fuera de Línea",
+                labels={'x': 'Nivel de Intensidad', 'y': 'Número de Contactos'},
                 color=intensity_counts.index,
                 color_discrete_map={
                     'None': '#3498db',
@@ -1412,7 +1412,7 @@ def render_online_offline_analysis_tab(cohort):
             st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            st.markdown("**Summary**")
+            st.markdown("**Resumen**")
             if 'offline_mentions_total' in cohort.columns:
                 offline_contacts = cohort[cohort['offline_mentions_total'] > 0]
                 if len(offline_contacts) > 0:
@@ -1421,12 +1421,12 @@ def render_online_offline_analysis_tab(cohort):
                     st.write(f"**Average:** {offline_contacts['offline_mentions_total'].mean():.1f} offline touches per contact")
                     st.write(f"**Range:** 1 to {int(offline_contacts['offline_mentions_total'].max())} touches")
                 else:
-                    st.info("No offline interactions in your data")
+                    st.info("No hay interacciones fuera de línea en tus datos")
     
     st.markdown("---")
     
     # 2. Online vs Offline by Engagement Segment
-    st.markdown("#### 🎯 Online vs Offline by Engagement Segment")
+    st.markdown("#### 🎯 En Línea vs Fuera de Línea por Segmento de Compromiso")
     
     if 'segment_engagement' in cohort.columns:
         offline_by_segment = pd.crosstab(
@@ -1452,8 +1452,8 @@ def render_online_offline_analysis_tab(cohort):
         fig = px.bar(
             offline_by_segment_pct,
             barmode='stack',
-            title="Online vs Offline Distribution by Segment (%)",
-            labels={'value': '% of Segment', 'variable': 'Type'},
+            title="Distribución En Línea vs Fuera de Línea por Segmento (%)",
+            labels={'value': '% del Segmento', 'variable': 'Tipo'},
             color_discrete_sequence=['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
         )
         st.plotly_chart(fig, use_container_width=True)
@@ -1489,7 +1489,7 @@ def render_online_offline_analysis_tab(cohort):
     st.markdown("---")
     
     # 4. Performance comparison: Online vs Offline
-    st.markdown("#### 💰 Performance Metrics: Online vs Offline")
+    st.markdown("#### 💰 Métricas de Rendimiento: En Línea vs Fuera de Línea")
     
     performance_metrics = cohort.groupby('offline_type').agg({
         'contact_id': 'count',
@@ -1501,11 +1501,11 @@ def render_online_offline_analysis_tab(cohort):
         'close_date': lambda x: x.notna().sum()
     }).round(2)
     
-    performance_metrics.columns = ['Contacts', 'Avg Sessions', 'Avg Pageviews', 
-                                   'Avg Forms', 'Avg Social Clicks', 'Avg Engagement', 'Closed']
+    performance_metrics.columns = ['Contactos', 'Sesiones Prom', 'Páginas Vistas Prom', 
+                                   'Formularios Prom', 'Clics Sociales Prom', 'Compromiso Prom', 'Cerrados']
     
-    performance_metrics['Close Rate %'] = (
-        performance_metrics['Closed'] / performance_metrics['Contacts'] * 100
+    performance_metrics['Tasa de Cierre %'] = (
+        performance_metrics['Cerrados'] / performance_metrics['Contactos'] * 100
     ).round(1)
     
     st.dataframe(performance_metrics, use_container_width=True)
@@ -1514,30 +1514,30 @@ def render_online_offline_analysis_tab(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("**Close Rate Comparison:**")
-        close_rate_data = performance_metrics[['Close Rate %']].reset_index()
+        st.markdown("**Comparación de Tasa de Cierre:**")
+        close_rate_data = performance_metrics[['Tasa de Cierre %']].reset_index()
         fig = px.bar(
             close_rate_data,
             x='offline_type',
-            y='Close Rate %',
-            title="Close Rate: Online vs Offline",
-            labels={'offline_type': 'Type', 'Close Rate %': 'Close Rate %'},
-            color='Close Rate %',
+            y='Tasa de Cierre %',
+            title="Tasa de Cierre: En Línea vs Fuera de Línea",
+            labels={'offline_type': 'Tipo', 'Tasa de Cierre %': 'Tasa de Cierre %'},
+            color='Tasa de Cierre %',
             color_continuous_scale='RdYlGn'
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("**Engagement Score Comparison:**")
-        engagement_data = performance_metrics[['Avg Engagement']].reset_index()
+        st.markdown("**Comparación de Puntuación de Compromiso:**")
+        engagement_data = performance_metrics[['Compromiso Prom']].reset_index()
         fig = px.bar(
             engagement_data,
             x='offline_type',
-            y='Avg Engagement',
-            title="Avg Engagement Score: Online vs Offline",
-            labels={'offline_type': 'Type', 'Avg Engagement': 'Engagement Score'},
-            color='Avg Engagement',
+            y='Compromiso Prom',
+            title="Puntuación Promedio de Compromiso: En Línea vs Fuera de Línea",
+            labels={'offline_type': 'Tipo', 'Compromiso Prom': 'Puntuación de Compromiso'},
+            color='Compromiso Prom',
             color_continuous_scale='Viridis'
         )
         fig.update_layout(showlegend=False)
@@ -1562,8 +1562,8 @@ def render_online_offline_analysis_tab(cohort):
                 closed_cohort,
                 x='offline_type',
                 y='days_to_close',
-                title="Days to Close Distribution: Online vs Offline",
-                labels={'offline_type': 'Type', 'days_to_close': 'Days to Close'},
+                title="Distribución de Días hasta Cierre: En Línea vs Fuera de Línea",
+                labels={'offline_type': 'Tipo', 'days_to_close': 'Días hasta Cierre'},
                 color='offline_type',
                 color_discrete_sequence=['#3498db', '#e74c3c', '#f39c12', '#2ecc71']
             )
@@ -1572,7 +1572,7 @@ def render_online_offline_analysis_tab(cohort):
     st.markdown("---")
     
     # 6. Lifecycle stage distribution
-    st.markdown("#### 🔄 Lifecycle Stage: Online vs Offline")
+    st.markdown("#### 🔄 Etapa del Ciclo de Vida: En Línea vs Fuera de Línea")
     
     if 'lifecycle_stage' in cohort.columns:
         lifecycle_offline = pd.crosstab(
@@ -1585,13 +1585,13 @@ def render_online_offline_analysis_tab(cohort):
         top_stages = cohort['lifecycle_stage'].value_counts().head(6).index
         lifecycle_filtered = lifecycle_offline[lifecycle_offline.columns.intersection(top_stages)]
         
-        st.markdown("**Top Lifecycle Stages by Online/Offline (%):**")
+        st.markdown("**Principales Etapas del Ciclo de Vida por En Línea/Fuera de Línea (%):**")
         st.dataframe(lifecycle_filtered.round(1), use_container_width=True)
     
     st.markdown("---")
     
     # 7. Key insights
-    st.markdown("#### 💡 Key Insights")
+    st.markdown("#### 💡 Insights Clave")
     
     insights = []
     
@@ -1601,50 +1601,50 @@ def render_online_offline_analysis_tab(cohort):
     
     if online_count > 0 and offline_total > 0:
         ratio = online_count / offline_total if offline_total > 0 else 0
-        insights.append(f"📊 **Volume Ratio:** {ratio:.1f}x more Online than Offline contacts")
+        insights.append(f"📊 **Proporción de Volumen:** {ratio:.1f}x más contactos En Línea que Fuera de Línea")
     
     # Performance comparison
-    if 'Close Rate %' in performance_metrics.columns:
-        online_rate = performance_metrics.loc['Online', 'Close Rate %'] if 'Online' in performance_metrics.index else 0
-        offline_rates = [performance_metrics.loc[idx, 'Close Rate %'] 
-                        for idx in performance_metrics.index if idx != 'Online' and 'Close Rate %' in performance_metrics.columns]
+    if 'Tasa de Cierre %' in performance_metrics.columns:
+        online_rate = performance_metrics.loc['Online', 'Tasa de Cierre %'] if 'Online' in performance_metrics.index else 0
+        offline_rates = [performance_metrics.loc[idx, 'Tasa de Cierre %'] 
+                        for idx in performance_metrics.index if idx != 'Online' and 'Tasa de Cierre %' in performance_metrics.columns]
         
         if offline_rates:
             avg_offline_rate = np.mean(offline_rates)
             if online_rate > avg_offline_rate:
                 diff = online_rate - avg_offline_rate
-                insights.append(f"✅ **Online Performs Better:** {diff:.1f}% higher close rate")
+                insights.append(f"✅ **En Línea Rinde Mejor:** {diff:.1f}% mayor tasa de cierre")
             elif avg_offline_rate > online_rate:
                 diff = avg_offline_rate - online_rate
-                insights.append(f"⚠️ **Offline Performs Better:** {diff:.1f}% higher close rate")
+                insights.append(f"⚠️ **Fuera de Línea Rinde Mejor:** {diff:.1f}% mayor tasa de cierre")
     
     # Engagement comparison
-    if 'Avg Engagement' in performance_metrics.columns and 'Online' in performance_metrics.index:
-        online_engagement = performance_metrics.loc['Online', 'Avg Engagement']
-        offline_engagements = [performance_metrics.loc[idx, 'Avg Engagement'] 
+    if 'Compromiso Prom' in performance_metrics.columns and 'Online' in performance_metrics.index:
+        online_engagement = performance_metrics.loc['Online', 'Compromiso Prom']
+        offline_engagements = [performance_metrics.loc[idx, 'Compromiso Prom'] 
                               for idx in performance_metrics.index if idx != 'Online']
         
         if offline_engagements:
             avg_offline_engagement = np.mean(offline_engagements)
             if online_engagement > avg_offline_engagement:
-                insights.append(f"🚀 **Online More Engaged:** {online_engagement:.2f} vs {avg_offline_engagement:.2f} avg offline")
+                insights.append(f"🚀 **En Línea Más Comprometido:** {online_engagement:.2f} vs {avg_offline_engagement:.2f} promedio fuera de línea")
     
     # Hybrid strategy indicator
     hybrid_count = offline_counts.get('Offline (Both)', 0)
     if hybrid_count > 0:
         hybrid_pct = (hybrid_count / len(cohort) * 100)
-        insights.append(f"🔗 **Hybrid Strategy Opportunity:** {hybrid_pct:.1f}% have both online and offline touches")
+        insights.append(f"🔗 **Oportunidad de Estrategia Híbrida:** {hybrid_pct:.1f}% tienen contacto tanto en línea como fuera de línea")
     
     if insights:
         for insight in insights:
             st.markdown(insight)
     else:
-        st.info("Not enough data for insights")
+        st.info("No hay suficientes datos para insights")
 
 def render_academic_period_tab(cohort):
     """Render academic period analysis tab"""
     st.markdown("### 📅 Academic Period (Seasonal) Analysis")
-    st.markdown("Understand enrollment cycles and seasonal trends")
+    st.markdown("Comprende los ciclos de inscripción y tendencias estacionales")
     
     # Look for academic period fields
     period_fields = [
@@ -1659,16 +1659,16 @@ def render_academic_period_tab(cohort):
             break
     
     if period_col is None:
-        st.warning("📅 Academic period data not available in dataset")
+        st.warning("📅 Datos de período académico no disponibles en el dataset")
         st.info("""
-        **Expected field:** 'Periodo de ingreso' or similar
+        **Campo esperado:** 'Periodo de ingreso' o similar
         
-        **Format:** YYYYMM (e.g., 202408 for August 2024)
+        **Formato:** YYYYMM (p. ej., 202408 para Agosto 2024)
         
-        This analysis shows:
-        - Seasonal enrollment patterns
-        - Performance by admission period
-        - Engagement trends over time
+        Este análisis muestra:
+        - Patrones de inscripción estacionales
+        - Rendimiento por período de admisión
+        - Tendencias de compromiso a lo largo del tiempo
         """)
         return
     
@@ -1679,21 +1679,21 @@ def render_academic_period_tab(cohort):
         """Convert YYYYMM to readable format"""
         try:
             if pd.isna(period_code):
-                return "Unknown"
+                return "Desconocido"
             
             period_str = str(int(period_code)).strip()
             if len(period_str) != 6:
-                return "Unknown"
+                return "Desconocido"
             
             year = period_str[:4]
             period = int(period_str[4:])
             
             # Map period codes to semester names (from notebooks)
             period_map = {
-                5: "Special",
-                10: "Spring", 
-                35: "Summer",
-                60: "Fall",
+                5: "Especial",
+                10: "Primavera", 
+                35: "Verano",
+                60: "Otoño",
                 75: "Winter/Special"
             }
             
@@ -1710,13 +1710,13 @@ def render_academic_period_tab(cohort):
     cohort_periodo = cohort_periodo[cohort_periodo['periodo_readable'] != 'Unknown']
     
     if len(cohort_periodo) == 0:
-        st.warning("No valid academic period data found")
+        st.warning("No se encontraron datos válidos de período académico")
         return
     
-    st.success(f"📊 Analyzing {len(cohort_periodo):,} contacts with valid admission period data")
+    st.success(f"📊 Analizando {len(cohort_periodo):,} contactos con datos válidos de período de admisión")
     
     # 1. Basic counts by period
-    st.markdown("#### 📊 Contact Volume by Admission Period")
+    st.markdown("#### 📊 Volumen de Contactos por Período de Admisión")
     
     periodo_counts = cohort_periodo['periodo_readable'].value_counts().sort_index()
     
@@ -1734,15 +1734,15 @@ def render_academic_period_tab(cohort):
             periodo_df,
             x='Admission Period',
             y='Number of Contacts',
-            title="Contacts by Admission Period (Chronological)"
+                title="Contactos por Período de Admisión (Cronológico)"
         )
         # Use a single professional color
         fig.update_traces(marker_color='#3498db')
         fig.update_layout(
             showlegend=False, 
             xaxis_tickangle=-45,
-            yaxis_title="Number of Contacts",
-            xaxis_title="Admission Period"
+            yaxis_title="Número de Contactos",
+            xaxis_title="Período de Admisión"
         )
         st.plotly_chart(fig, use_container_width=True)
     
@@ -1755,8 +1755,8 @@ def render_academic_period_tab(cohort):
             # Show percentage as label, not as delta (which implies growth)
             st.metric(
                 label=period, 
-                value=f"{count:,} contacts",
-                help=f"Represents {pct:.1f}% of all contacts in this analysis"
+                value=f"{count:,} contactos",
+                help=f"Representa {pct:.1f}% de todos los contactos en este análisis"
             )
     
     st.markdown("---")
@@ -1778,8 +1778,8 @@ def render_academic_period_tab(cohort):
             fig = px.line(
                 x=periodo_engagement.index,
                 y=periodo_engagement['engagement_score'],
-                title="Engagement Score Trend by Period",
-                labels={'x': 'Period', 'y': 'Avg Engagement Score'},
+                title="Tendencia de Puntuación de Compromiso por Período",
+                labels={'x': 'Período', 'y': 'Puntuación Prom. de Compromiso'},
                 markers=True
             )
             fig.update_layout(xaxis_tickangle=-45)
@@ -1805,8 +1805,8 @@ def render_academic_period_tab(cohort):
         fig = px.bar(
             seg_by_period,
             barmode='stack',
-            title="Segment Distribution by Period",
-            labels={'value': '% of Contacts', 'variable': 'Segment'},
+            title="Distribución de Segmentos por Período",
+            labels={'value': '% de Contactos', 'variable': 'Segmento'},
             color_discrete_sequence=px.colors.qualitative.Set2
         )
         fig.update_layout(xaxis_tickangle=-45)
@@ -1837,7 +1837,7 @@ def render_academic_period_tab(cohort):
     st.markdown("---")
     
     # 5. Close rates by period
-    st.markdown("#### 💰 Performance by Period")
+    st.markdown("#### 💰 Rendimiento por Período")
     
     periodo_performance = []
     for period in periodo_counts.head(10).index:
@@ -1864,7 +1864,7 @@ def render_academic_period_tab(cohort):
         # Close rate trend
         fig = px.line(
             perf_df, x='Period', y='Close Rate %',
-            title="Close Rate Trend by Admission Period",
+            title="Tendencia de Tasa de Cierre por Período de Admisión",
             markers=True,
             color_discrete_sequence=['#2ecc71']
         )
@@ -1874,7 +1874,7 @@ def render_academic_period_tab(cohort):
     st.markdown("---")
     
     # 6. Lifecycle stages by period
-    st.markdown("#### 🔄 Lifecycle Stage by Period")
+    st.markdown("#### 🔄 Etapa del Ciclo de Vida por Período")
     
     if 'lifecycle_stage' in cohort_periodo.columns:
         # Get top lifecycle stages
@@ -1928,7 +1928,7 @@ def render_academic_period_tab(cohort):
 def render_performance_benchmarks_c1(cohort):
     """Render performance benchmarks tab"""
     st.markdown("### 🔬 Performance Benchmarks & Comparisons")
-    st.markdown("Compare segments against key performance indicators")
+    st.markdown("Compara segmentos contra indicadores clave de rendimiento")
     
     st.markdown("---")
     
@@ -1976,8 +1976,8 @@ def render_performance_benchmarks_c1(cohort):
         fig = px.bar(
             x=platform_performance.index,
             y=platform_performance['Close Rate %'],
-            title="Close Rate by Platform (Top 15)",
-            labels={'x': 'Platform', 'y': 'Close Rate %'},
+            title="Tasa de Cierre por Plataforma (Top 15)",
+            labels={'x': 'Plataforma', 'y': 'Tasa de Cierre %'},
             color=platform_performance['Close Rate %'],
             color_continuous_scale='RdYlGn'
         )
@@ -2033,8 +2033,8 @@ def render_performance_benchmarks_c1(cohort):
         fig = px.bar(
             x=quartile_analysis.index,
             y=quartile_analysis['Close Rate %'],
-            title="Close Rate by Engagement Quartile",
-            labels={'x': 'Quartile', 'y': 'Close Rate %'},
+            title="Tasa de Cierre por Cuartil de Compromiso",
+            labels={'x': 'Cuartil', 'y': 'Tasa de Cierre %'},
             color=quartile_analysis['Close Rate %'],
             color_continuous_scale='Viridis'
         )
@@ -2055,8 +2055,8 @@ def render_performance_benchmarks_c1(cohort):
     
     fig = px.imshow(
         heatmap_pivot,
-        labels=dict(x="Platform", y="Segment", color="Contacts"),
-        title="Contact Distribution: Segment × Platform (Top 10 Platforms)",
+        labels=dict(x="Plataforma", y="Segmento", color="Contactos"),
+        title="Distribución de Contactos: Segmento × Plataforma (Top 10 Plataformas)",
         color_continuous_scale='Blues',
         aspect="auto"
     )
@@ -2103,64 +2103,64 @@ def render_performance_benchmarks_c1(cohort):
         for insight in insights:
             st.markdown(insight)
     else:
-        st.info("Not enough data for insights")
+        st.info("No hay suficientes datos para insights")
 
 def render_contact_lookup_tab(cohort):
     """Render contact lookup tab"""
     st.markdown("### 🔍 Individual Contact Lookup")
     
     if 'contact_id' not in cohort.columns:
-        st.warning("Contact ID not available in dataset.")
+        st.warning("ID de contacto no disponible en el dataset.")
         return
     
-    contact_id = st.text_input("Enter Contact ID:", placeholder="e.g., 12345")
+    contact_id = st.text_input("Ingresar ID de Contacto:", placeholder="p. ej., 12345")
     
     if contact_id:
         contact_id_str = str(contact_id).strip()
         matches = cohort[cohort['contact_id'].astype(str) == contact_id_str]
         
         if len(matches) == 0:
-            st.error(f"No contact found with ID: {contact_id}")
+            st.error(f"No se encontró contacto con ID: {contact_id}")
         else:
             contact = matches.iloc[0]
             
-            st.markdown("#### Contact Profile")
+            st.markdown("#### Perfil de Contacto")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.markdown("**Identification**")
-                st.write(f"**Contact ID:** {contact.get('contact_id', 'N/A')}")
-                st.write(f"**Segment:** {contact.get('segment_engagement', 'N/A')}")
-                st.write(f"**Platform:** {contact.get('platform_tag', 'N/A')}")
-                st.write(f"**Overlay:** {contact.get('segment_overlay', 'N/A')}")
+                st.markdown("**Identificación**")
+                st.write(f"**ID de Contacto:** {contact.get('contact_id', 'N/A')}")
+                st.write(f"**Segmento:** {contact.get('segment_engagement', 'N/A')}")
+                st.write(f"**Plataforma:** {contact.get('platform_tag', 'N/A')}")
+                st.write(f"**Superposición:** {contact.get('segment_overlay', 'N/A')}")
             
             with col2:
-                st.markdown("**Engagement**")
-                st.write(f"**Sessions:** {int(contact.get('num_sessions', 0)):,}")
-                st.write(f"**Pageviews:** {int(contact.get('num_pageviews', 0)):,}")
-                st.write(f"**Forms:** {int(contact.get('forms_submitted', 0)):,}")
-                st.write(f"**Social Clicks:** {int(contact.get('social_clicks_total', 0)):,}")
-                st.write(f"**Engagement Score:** {contact.get('engagement_score', 0):.2f}")
+                st.markdown("**Compromiso**")
+                st.write(f"**Sesiones:** {int(contact.get('num_sessions', 0)):,}")
+                st.write(f"**Páginas Vistas:** {int(contact.get('num_pageviews', 0)):,}")
+                st.write(f"**Formularios:** {int(contact.get('forms_submitted', 0)):,}")
+                st.write(f"**Clics Sociales:** {int(contact.get('social_clicks_total', 0)):,}")
+                st.write(f"**Puntuación de Compromiso:** {contact.get('engagement_score', 0):.2f}")
             
             with col3:
-                st.markdown("**Outcomes**")
+                st.markdown("**Resultados**")
                 if 'likelihood_to_close_norm' in contact.index:
                     likelihood = contact.get('likelihood_to_close_norm', 0) * 100
-                    st.write(f"**Likelihood:** {likelihood:.1f}%")
+                    st.write(f"**Probabilidad:** {likelihood:.1f}%")
                 
-                is_closed = "Yes" if pd.notna(contact.get('close_date')) else "No"
-                st.write(f"**Closed:** {is_closed}")
+                is_closed = "Sí" if pd.notna(contact.get('close_date')) else "No"
+                st.write(f"**Cerrado:** {is_closed}")
                 
                 if pd.notna(contact.get('days_to_close')):
-                    st.write(f"**Days to Close:** {contact.get('days_to_close', 0):.0f}")
-                    st.write(f"**TTC Bucket:** {contact.get('ttc_bucket', 'N/A')}")
+                    st.write(f"**Días hasta Cierre:** {contact.get('days_to_close', 0):.0f}")
+                    st.write(f"**Bucket TTC:** {contact.get('ttc_bucket', 'N/A')}")
                 
                 if 'lifecycle_stage' in contact.index:
-                    st.write(f"**Lifecycle:** {contact.get('lifecycle_stage', 'N/A')}")
+                    st.write(f"**Ciclo de Vida:** {contact.get('lifecycle_stage', 'N/A')}")
             
             st.markdown("---")
-            st.markdown("#### Platform Signals")
+            st.markdown("#### Señales de Plataforma")
             
             platform_data = []
             for platform in PLATFORM_KEYWORDS.keys():
@@ -2174,16 +2174,16 @@ def render_contact_lookup_tab(cohort):
                 platform_df = pd.DataFrame(platform_data).sort_values('Mentions', ascending=False)
                 st.dataframe(platform_df, use_container_width=True)
             else:
-                st.info("No platform signals detected for this contact.")
+                st.info("No se detectaron señales de plataforma para este contacto.")
             
             # Show journey visualization
             st.markdown("---")
-            st.markdown("#### 🗺️ Source Journey Visualization")
+            st.markdown("#### 🗺️ Visualización del Viaje de Fuentes")
             
             fig = visualize_source_journey(contact_id, cohort, raw_data=None)
             if fig:
                 st.pyplot(fig)
                 plt.close(fig)
             else:
-                st.info("📊 No journey data available for visualization")
+                st.info("📊 No hay datos de recorrido disponibles para visualización")
 

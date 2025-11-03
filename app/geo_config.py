@@ -19,61 +19,61 @@ DEFAULT_CONFIG = {
 def render_geo_config_ui():
     """Render the geographic configuration interface in sidebar"""
     
-    st.markdown("### 🌎 Geographic Settings")
+    st.markdown("### 🌎 Configuración Geográfica")
     
-    with st.expander("⚙️ Configure Your Geography", expanded=False):
+    with st.expander("⚙️ Configurar Tu Geografía", expanded=False):
         st.markdown("""
-        **Customize geographic analysis for your region:**
+        **Personaliza el análisis geográfico para tu región:**
         
-        Define what "domestic" and "local" mean for your organization.
+        Define qué significan "nacional" y "local" para tu organización.
         """)
         
         # Home Country Configuration
-        st.markdown("#### 🏠 Home Country (Domestic)")
+        st.markdown("#### 🏠 País de Origen (Nacional)")
         home_country = st.text_input(
-            "Your home country:",
+            "Tu país de origen:",
             value=st.session_state.get('geo_home_country', 'Mexico'),
-            help="Contacts from this country will be classified as 'domestic'"
+            help="Los contactos de este país serán clasificados como 'nacionales'"
         )
         
         home_aliases = st.text_input(
-            "Country aliases (comma-separated):",
+            "Alias del país (separados por comas):",
             value=st.session_state.get('geo_home_aliases', 'mexico, mx, mex'),
-            help="Alternative names/codes for your country (e.g., USA, US, United States)"
+            help="Nombres/códigos alternativos para tu país (ej., USA, US, United States)"
         )
         
         st.markdown("---")
         
         # Local Region Configuration
-        st.markdown("#### 📍 Local Region (Your City/State)")
+        st.markdown("#### 📍 Región Local (Tu Ciudad/Estado)")
         local_region = st.text_input(
-            "Your local region name:",
+            "Nombre de tu región local:",
             value=st.session_state.get('geo_local_region', 'Querétaro'),
-            help="Your specific city or state (e.g., California, São Paulo, Querétaro)"
+            help="Tu ciudad o estado específico (ej., California, São Paulo, Querétaro)"
         )
         
         local_aliases = st.text_input(
-            "Local region aliases (comma-separated):",
+            "Alias de la región local (separados por comas):",
             value=st.session_state.get('geo_local_aliases', 'queretaro, qro, queretaro de arteaga'),
-            help="Alternative names for your region (e.g., SF, San Francisco, San Fran)"
+            help="Nombres alternativos para tu región (ej., SF, San Francisco, San Fran)"
         )
         
         st.markdown("---")
         
         # Geographic Tier Definitions
-        st.markdown("#### 📊 Classification Logic")
+        st.markdown("#### 📊 Lógica de Clasificación")
         st.info("""
-        **Contacts will be classified as:**
-        - 🏠 **Local**: From your specified city/region
-        - 🇲🇽 **Domestic (non-local)**: From your country, but not local region
-        - 🌍 **International**: From outside your country
+        **Los contactos serán clasificados como:**
+        - 🏠 **Local**: De tu ciudad/región especificada
+        - 🇲🇽 **Foráneo (no local)**: De tu país, pero no de la región local
+        - 🌍 **Internacional**: De fuera de tu país
         """)
         
         # Apply button
         col1, col2 = st.columns(2)
         
         with col1:
-            if st.button("✅ Apply Settings", use_container_width=True):
+            if st.button("✅ Aplicar Configuración", use_container_width=True):
                 # Parse aliases
                 home_aliases_list = [a.strip().lower() for a in home_aliases.split(',') if a.strip()]
                 local_aliases_list = [a.strip().lower() for a in local_aliases.split(',') if a.strip()]
@@ -90,11 +90,11 @@ def render_geo_config_ui():
                 # Clear cached data to force re-analysis
                 st.cache_data.clear()
                 
-                st.success(f"✅ Settings applied! Home: {home_country}, Local: {local_region}")
+                st.success(f"✅ ¡Configuración aplicada! País: {home_country}, Local: {local_region}")
                 st.rerun()
         
         with col2:
-            if st.button("🔄 Reset to Default", use_container_width=True):
+            if st.button("🔄 Restablecer a Predeterminado", use_container_width=True):
                 # Reset to Mexico/Querétaro defaults
                 st.session_state['geo_home_country'] = 'Mexico'
                 st.session_state['geo_home_aliases'] = 'mexico, mx, mex'
@@ -102,15 +102,15 @@ def render_geo_config_ui():
                 st.session_state['geo_local_aliases'] = 'queretaro, qro, queretaro de arteaga'
                 st.session_state['geo_config_applied'] = True
                 st.cache_data.clear()
-                st.success("✅ Reset to Mexico/Querétaro defaults")
+                st.success("✅ Restablecido a valores predeterminados de México/Querétaro")
                 st.rerun()
         
         # Show current configuration
         if st.session_state.get('geo_config_applied', False):
             st.markdown("---")
-            st.markdown("**Current Configuration:**")
-            st.write(f"🏠 **Home Country:** {st.session_state.get('geo_home_country', 'Mexico')}")
-            st.write(f"📍 **Local Region:** {st.session_state.get('geo_local_region', 'Querétaro')}")
+            st.markdown("**Configuración Actual:**")
+            st.write(f"🏠 **País de Origen:** {st.session_state.get('geo_home_country', 'Mexico')}")
+            st.write(f"📍 **Región Local:** {st.session_state.get('geo_local_region', 'Querétaro')}")
 
 def get_geo_config():
     """Get the current geographic configuration"""
@@ -190,7 +190,7 @@ def get_geo_display_names(config):
     """Get display names for the UI based on configuration"""
     return {
         'local': f"Local ({config['local_region']})",
-        'domestic_non_local': f"Domestic (non-{config['local_region']})",
+        'domestic_non_local': f"Foráneo (no-{config['local_region']})",
         'international': 'International',
         'unknown': 'Unknown',
         'segment_2A': f"2A: {config['home_country']} (non-{config['local_region']}), High Engagement",
@@ -231,10 +231,10 @@ EXAMPLE_CONFIGS = {
 
 def show_example_configs():
     """Show example configurations for different regions"""
-    st.markdown("#### 📝 Example Configurations")
+    st.markdown("#### 📝 Configuraciones de Ejemplo")
     
     for region_name, config in EXAMPLE_CONFIGS.items():
-        with st.expander(f"Example: {region_name}"):
+        with st.expander(f"Ejemplo: {region_name}"):
             st.code(f"""
 Home Country: {config['home_country']}
 Country Aliases: {config['home_aliases']}

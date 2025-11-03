@@ -1,6 +1,6 @@
 """
-APREU Advanced Segmentation - Interactive POC
-A comprehensive Streamlit application showcasing three distinct segmentation strategies.
+APREU Segmentación Avanzada - POC Interactivo
+Una aplicación Streamlit integral que muestra tres estrategias de segmentación distintas.
 """
 
 import streamlit as st
@@ -12,7 +12,7 @@ from pathlib import Path
 
 # Page configuration
 st.set_page_config(
-    page_title="APREU Advanced Segmentation POC",
+    page_title="SEGMENTACIÓN AVANZADA DE APREU",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -66,8 +66,8 @@ def main():
     """Main application entry point"""
     
     # Header
-    st.markdown('<h1 class="main-header">🎯 APREU Advanced Segmentation</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Proof of Concept - Interactive Segmentation Analytics</p>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🎯 APREU SEGMENTACIÓN AVANZADA</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Prueba de Concepto - Análisis Interactivo por Segmentación</p>', unsafe_allow_html=True)
     
     # Sidebar navigation
     with st.sidebar:
@@ -87,24 +87,24 @@ def main():
             st.markdown("### 🎯 APREU")
         st.markdown("---")
         
-        st.markdown("### 📁 Data Source")
+        st.markdown("### 📁 Fuente de Datos")
         
         # File upload option
         data_source = st.radio(
-            "Choose data source:",
-            ["📂 Use Default File", "⬆️ Upload CSV"],
+            "Elegir fuente de datos:",
+            ["📂 Usar Archivo Predeterminado", "⬆️ Subir CSV"],
             index=0
         )
         
         uploaded_file = None
         data = None
         
-        if data_source == "⬆️ Upload CSV":
-            st.markdown("**Upload HubSpot Contact Export:**")
+        if data_source == "⬆️ Subir CSV":
+            st.markdown("**Subir Exportación de Contactos de HubSpot:**")
             uploaded_file = st.file_uploader(
-                "Choose a CSV file",
+                "Elegir un archivo CSV",
                 type=['csv'],
-                help="Upload your HubSpot contacts export CSV file"
+                help="Sube tu archivo CSV de exportación de contactos de HubSpot"
             )
             
             if uploaded_file is not None:
@@ -114,49 +114,49 @@ def main():
                     validation = validate_data(data)
                     
                     if validation['is_valid']:
-                        st.success(f"✅ Loaded {len(data):,} contacts")
+                        st.success(f"✅ Cargados {len(data):,} contactos")
                         
                         # Show data preview
-                        with st.expander("📋 Data Preview"):
-                            st.write(f"**Columns:** {len(data.columns)}")
-                            st.write(f"**Rows:** {len(data):,}")
+                        with st.expander("📋 Vista Previa de Datos"):
+                            st.write(f"**Columnas:** {len(data.columns)}")
+                            st.write(f"**Filas:** {len(data):,}")
                             st.dataframe(data.head(3), use_container_width=True)
                         
                         # Show warnings if any
                         if validation['warnings']:
-                            with st.expander("⚠️ Warnings", expanded=False):
+                            with st.expander("⚠️ Advertencias", expanded=False):
                                 for warning in validation['warnings']:
                                     st.warning(warning)
                     else:
-                        st.error(f"❌ Invalid data: Missing required columns: {', '.join(validation['missing_basic'])}")
+                        st.error(f"❌ Datos inválidos: Faltan columnas requeridas: {', '.join(validation['missing_basic'])}")
                         data = None
                         
                 except Exception as e:
-                    st.error(f"❌ Error loading file: {e}")
+                    st.error(f"❌ Error cargando archivo: {e}")
                     data = None
             else:
-                st.info("👆 Please upload a CSV file to begin analysis")
+                st.info("👆 Por favor sube un archivo CSV para comenzar el análisis")
         else:
             # Use default file
             try:
                 data = load_data()
-                st.success(f"✅ Loaded {len(data):,} contacts")
+                st.success(f"✅ Cargados {len(data):,} contactos")
                 
-                with st.expander("ℹ️ Using Default Data"):
-                    st.write("**File:** data/raw/contacts_campus_Qro_.csv")
-                    st.write(f"**Columns:** {len(data.columns)}")
-                    st.write(f"**Rows:** {len(data):,}")
+                with st.expander("ℹ️ Usando Datos Predeterminados"):
+                    st.write("**Archivo:** data/raw/contacts_campus_Qro_.csv")
+                    st.write(f"**Columnas:** {len(data.columns)}")
+                    st.write(f"**Filas:** {len(data):,}")
             except Exception as e:
-                st.error(f"❌ Error loading default file: {e}")
-                st.info("💡 Try uploading your own CSV file instead")
+                st.error(f"❌ Error cargando archivo predeterminado: {e}")
+                st.info("💡 Intenta subir tu propio archivo CSV")
                 data = None
         
         st.markdown("---")
         
         # Global Filters Section
-        st.markdown("### 🎛️ Global Filters")
+        st.markdown("### 🎛️ Filtros Globales")
         
-        with st.expander("📅 Academic Period Filter", expanded=False):
+        with st.expander("📅 Filtro de Período Académico", expanded=False):
             if data is not None:
                 # Look for periodo de ingreso field
                 periodo_fields = [
@@ -188,17 +188,17 @@ def main():
                             
                             # Map period codes to semester names (from notebooks)
                             period_map = {
-                                5: "Special",
-                                10: "Spring", 
-                                35: "Summer",
-                                60: "Fall",
-                                75: "Winter/Special"
+                                5: "Especial",
+                                10: "Primavera", 
+                                35: "Verano",
+                                60: "Otoño",
+                                75: "Invierno/Especial"
                             }
                             
-                            semester = period_map.get(period_code, f"Unknown({period_code})")
+                            semester = period_map.get(period_code, f"Desconocido({period_code})")
                             return f"{year} {semester}"
                         except:
-                            return "Unknown"
+                            return "Desconocido"
                     
                     import pandas as pd
                     from utils import hist_latest
@@ -206,36 +206,36 @@ def main():
                     # Get latest periodo values
                     periodo_latest = data[periodo_col].apply(hist_latest)
                     periodo_readable = periodo_latest.apply(convert_periodo)
-                    available_periodos = sorted([p for p in periodo_readable.unique() if p != "Unknown"])
+                    available_periodos = sorted([p for p in periodo_readable.unique() if p != "Desconocido"])
                     
                     if available_periodos:
                         selected_periodos = st.multiselect(
-                            "Select Admission Period(s):",
+                            "Seleccionar Período(s) de Ingreso:",
                             options=available_periodos,
                             default=[],
-                            help="Filter contacts by their admission period (leave empty for all)"
+                            help="Filtrar contactos por su período de ingreso (dejar vacío para todos)"
                         )
                         
                         st.session_state['filter_periodos'] = selected_periodos
                     else:
-                        st.info("No valid periodo de ingreso data found")
+                        st.info("No se encontraron datos válidos de período de ingreso")
                 else:
-                    st.info("📅 Periodo de ingreso field not found in dataset")
+                    st.info("📅 Campo de período de ingreso no encontrado en el dataset")
             else:
-                st.info("Load data to see periodo filter")
+                st.info("Cargar datos para ver filtro de período")
         
-        with st.expander("💼 Closure Status Filter", expanded=False):
+        with st.expander("💼 Filtro de Estado de Cierre", expanded=False):
             closure_status = st.radio(
-                "Closure Status:",
-                ["All Contacts", "Closed Only", "Open Only"],
+                "Estado de Cierre:",
+                ["Todos los Contactos", "Solo Cerrados", "Solo Abiertos"],
                 index=0,
-                help="Filter by deal closure status"
+                help="Filtrar por estado de cierre de tratos"
             )
             
             # Store in session state
             st.session_state['filter_closure_status'] = closure_status
         
-        with st.expander("🔄 Lifecycle Filters", expanded=False):
+        with st.expander("🔄 Filtros de Ciclo de Vida", expanded=False):
             if data is not None:
                 from utils import hist_latest
                 import pandas as pd
@@ -248,20 +248,20 @@ def main():
                     
                     if available_stages:
                         selected_stages = st.multiselect(
-                            "Select Lifecycle Stages (leave empty for all):",
+                            "Seleccionar Etapas del Ciclo de Vida (dejar vacío para todas):",
                             options=available_stages,
                             default=[],
-                            help="Filter to specific lifecycle stages (uses LATEST value only)"
+                            help="Filtrar a etapas específicas del ciclo de vida (usa solo el valor MÁS RECIENTE)"
                         )
                         
                         st.session_state['filter_lifecycle_stages'] = selected_stages
                     else:
-                        st.info("No valid lifecycle stages found")
+                        st.info("No se encontraron etapas válidas del ciclo de vida")
                 else:
-                    st.info("Lifecycle stage data not available")
+                    st.info("Datos de etapa del ciclo de vida no disponibles")
         
         # Reset filters button
-        if st.button("🔄 Reset All Filters", use_container_width=True):
+        if st.button("🔄 Restablecer Todos los Filtros", use_container_width=True):
             for key in list(st.session_state.keys()):
                 if key.startswith('filter_'):
                     del st.session_state[key]
@@ -270,7 +270,7 @@ def main():
         # Show active filters count
         active_filters = sum(1 for k in st.session_state.keys() if k.startswith('filter_'))
         if active_filters > 0:
-            st.info(f"✅ {active_filters} filter(s) active")
+            st.info(f"✅ {active_filters} filtro(s) activo(s)")
         
         st.markdown("---")
         
@@ -278,128 +278,128 @@ def main():
         render_geo_config_ui()
         
         st.markdown("---")
-        st.markdown("### 📊 Navigation")
+        st.markdown("### 📊 Navegación")
         
         cluster_choice = st.radio(
-            "Select Segmentation Strategy:",
-            ["🏠 Overview", "📱 Cluster 1: Social Engagement", "🌍 Cluster 2: Geography & Engagement", 
-             "🎪 Cluster 3: APREU Activities"],
+            "Seleccionar Estrategia de Segmentación:",
+            ["🏠 Resumen", "📱 Cluster 1: Compromiso Social", "🌍 Cluster 2: Geografía y Compromiso", 
+             "🎪 Cluster 3: Actividades APREU"],
             index=0,
             disabled=(data is None)
         )
         
         st.markdown("---")
-        st.markdown("### 📖 Quick Reference")
+        st.markdown("### 📖 Referencia Rápida")
         
-        with st.expander("🎯 Which Cluster Should I Use?"):
+        with st.expander("🎯 ¿Qué Cluster Debo Usar?"):
             st.markdown("""
-            **📱 Cluster 1: Social Media Strategy**
-            - *When:* Optimizing social media campaigns
-            - *For:* Platform budget allocation
-            - *Answers:* Which platforms convert best?
+            **📱 Cluster 1: Estrategia de Redes Sociales**
+            - *Cuándo:* Optimizar campañas de redes sociales
+            - *Para:* Asignación de presupuesto por plataforma
+            - *Responde:* ¿Qué plataformas convierten mejor?
             
-            **🌍 Cluster 2: Regional Campaigns**
-            - *When:* Planning geographic outreach
-            - *For:* Regional marketing strategy
-            - *Answers:* Which regions perform best?
+            **🌍 Cluster 2: Campañas Regionales**
+            - *Cuándo:* Planificar alcance geográfico
+            - *Para:* Estrategia de marketing regional
+            - *Responde:* ¿Qué regiones tienen mejor rendimiento?
             
-            **🎪 Cluster 3: Event Planning**
-            - *When:* Optimizing promotional activities
-            - *For:* APREU event ROI analysis
-            - *Answers:* Which events drive conversions?
+            **🎪 Cluster 3: Planificación de Eventos**
+            - *Cuándo:* Optimizar actividades promocionales
+            - *Para:* Análisis de ROI de eventos APREU
+            - *Responde:* ¿Qué eventos impulsan conversiones?
             
             ---
             
-            **💡 Pro Tip:** Use multiple clusters together!
-            - Cluster 1 + 2 = Social strategy by region
-            - Cluster 2 + 3 = Event planning by geography
-            - All 3 = Comprehensive marketing strategy
+            **💡 Consejo Pro:** ¡Usa múltiples clusters juntos!
+            - Cluster 1 + 2 = Estrategia social por región
+            - Cluster 2 + 3 = Planificación de eventos por geografía
+            - Los 3 = Estrategia de marketing integral
             """)
         
         st.markdown("---")
-        st.markdown("### ℹ️ About")
+        st.markdown("### ℹ️ Acerca de")
         st.info("""
-        **Advanced Segmentation POC**
+        **POC de Segmentación Avanzada**
         
-        This application showcases three complementary segmentation approaches:
+        Esta aplicación muestra tres enfoques complementarios de segmentación:
         
-        - **Cluster 1**: Social media activity & platform engagement
-        - **Cluster 2**: Geographic distribution & engagement levels  
-        - **Cluster 3**: Promotional activities & entry channels
+        - **Cluster 1**: Actividad en redes sociales y compromiso por plataforma
+        - **Cluster 2**: Distribución geográfica y niveles de compromiso  
+        - **Cluster 3**: Actividades promocionales y canales de entrada
         
-        **Global Filters Available:**
-        - 📅 Academic Period (Periodo de Ingreso)
-        - 🔄 Lifecycle Stage (latest value)
-        - 💼 Closure Status (Open/Closed/All)
+        **Filtros Globales Disponibles:**
+        - 📅 Período Académico (Período de Ingreso)
+        - 🔄 Etapa del Ciclo de Vida (valor más reciente)
+        - 💼 Estado de Cierre (Abierto/Cerrado/Todos)
         
-        Each cluster also has specific filters for deeper analysis.
+        Cada cluster también tiene filtros específicos para análisis más profundos.
         
-        **Data Pipeline:**
-        1. Total Contacts → 2. APREU Contacts → 3. Remove "other"/"subscriber" → 4. Working Contacts
+        **Pipeline de Datos:**
+        1. Total Contactos → 2. Contactos APREU → 3. Remover "other"/"subscriber" → 4. Contactos de Trabajo
         """)
         
         # Download template
         st.markdown("---")
-        st.markdown("### 📥 Need Help?")
+        st.markdown("### 📥 ¿Necesitas Ayuda?")
         
-        with st.expander("Required Data Format"):
+        with st.expander("Formato de Datos Requerido"):
             st.markdown("""
-            **Your CSV should include:**
+            **Tu CSV debe incluir:**
             
-            **Basic Fields:**
-            - Record ID (contact identifier)
-            - Propiedad del contacto (to filter for APREU)
+            **Campos Básicos:**
+            - Record ID (identificador de contacto)
+            - Propiedad del contacto (para filtrar por APREU)
             
-            **For Global Filters:**
-            - Periodo de ingreso (admission period - format: YYYYMM, e.g., 202460 = 2024 Fall)
-            - Lifecycle Stage (will use latest value, will remove "other" and "subscriber")
-            - Close Date (for closure status filter)
+            **Para Filtros Globales:**
+            - Período de ingreso (período de admisión - formato: YYYYMM, ej., 202460 = Otoño 2024)
+            - Etapa del Ciclo de Vida (usará el valor más reciente, removerá "other" y "subscriber")
+            - Fecha de Cierre (para filtro de estado de cierre)
             
-            **For Cluster 1 (Social):**
-            - Original Source
-            - Broadcast/LinkedIn/Twitter/Facebook Clicks
-            - Number of Sessions, Pageviews, Form Submissions
+            **Para Cluster 1 (Social):**
+            - Fuente Original
+            - Clics de Broadcast/LinkedIn/Twitter/Facebook
+            - Número de Sesiones, Páginas Vistas, Envíos de Formularios
             
-            **For Cluster 2 (Geography):**
-            - IP Country, IP State/Region
-            - Preparatoria location fields
-            - Number of Sessions, Pageviews, Form Submissions
+            **Para Cluster 2 (Geografía):**
+            - País IP, Estado/Región IP
+            - Campos de ubicación de preparatoria
+            - Número de Sesiones, Páginas Vistas, Envíos de Formularios
             
-            **For Cluster 3 (APREU):**
+            **Para Cluster 3 (APREU):**
             - Actividades de promoción APREU
-            - First/Recent Conversion
-            - Preparatoria information
+            - Primera Conversión/Conversión Reciente
+            - Información de preparatoria
             
-            **Note:** Fields with historical values (delimiter: //) will use the latest value for filtering.
+            **Nota:** Los campos con valores históricos (delimitador: //) usarán el valor más reciente para filtrar.
             
-            **Periodo Codes:** 05=Special, 10=Spring, 35=Summer, 60=Fall, 75=Winter/Special
+            **Códigos de Período:** 05=Especial, 10=Primavera, 35=Verano, 60=Otoño, 75=Invierno/Especial
             """)
         
-        if st.button("📄 View Sample Data Structure", use_container_width=True):
+        if st.button("📄 Ver Estructura de Datos de Ejemplo", use_container_width=True):
             if data is not None:
-                st.info("Sample columns from loaded data:")
+                st.info("Columnas de ejemplo de los datos cargados:")
                 st.code('\n'.join(data.columns[:20].tolist()))
             else:
-                st.info("Load data first to see column structure")
+                st.info("Cargar datos primero para ver estructura de columnas")
     
     # Main content area
     if data is None:
-        st.warning("⚠️ No data loaded. Please upload a CSV file or ensure the default file exists.")
+        st.warning("⚠️ No hay datos cargados. Por favor sube un archivo CSV o asegúrate de que el archivo predeterminado existe.")
         st.markdown("---")
-        st.markdown("### 🚀 Getting Started")
+        st.markdown("### 🚀 Comenzando")
         st.markdown("""
-        **Option 1: Use Default File**
-        - Ensure `contacts_campus_Qro_.csv` is in the `data/raw/` directory
-        - Select "📂 Use Default File" in the sidebar
+        **Opción 1: Usar Archivo Predeterminado**
+        - Asegúrate de que `contacts_campus_Qro_.csv` esté en el directorio `data/raw/`
+        - Selecciona "📂 Usar Archivo Predeterminado" en la barra lateral
         
-        **Option 2: Upload Your Own Data**
-        - Export contacts from HubSpot as CSV
-        - Select "⬆️ Upload CSV" in the sidebar
-        - Click the upload button and select your file
+        **Opción 2: Subir Tus Propios Datos**
+        - Exporta contactos de HubSpot como CSV
+        - Selecciona "⬆️ Subir CSV" en la barra lateral
+        - Haz clic en el botón de subir y selecciona tu archivo
         
-        **Need Help?**
-        - Check the "Required Data Format" section in the sidebar
-        - View sample data structure using the button in the sidebar
+        **¿Necesitas Ayuda?**
+        - Revisa la sección "Formato de Datos Requerido" en la barra lateral
+        - Ve la estructura de datos de ejemplo usando el botón en la barra lateral
         """)
     else:
         # Apply global filters
@@ -407,30 +407,30 @@ def main():
         
         # Show filter status
         if len(filters_applied) > 0:
-            with st.expander(f"🔍 Active Filters ({len(filters_applied)})", expanded=False):
-                st.markdown("**Applied filters:**")
+            with st.expander(f"🔍 Filtros Activos ({len(filters_applied)})", expanded=False):
+                st.markdown("**Filtros aplicados:**")
                 for f in filters_applied:
                     st.markdown(f"- {f}")
-                st.markdown(f"**Result:** {len(filtered_data):,} of {len(data):,} contacts ({len(filtered_data)/len(data)*100:.1f}%)")
+                st.markdown(f"**Resultado:** {len(filtered_data):,} de {len(data):,} contactos ({len(filtered_data)/len(data)*100:.1f}%)")
         
         # Route to appropriate cluster with filtered data
-        if cluster_choice == "🏠 Overview":
+        if cluster_choice == "🏠 Resumen":
             render_overview(filtered_data)
-        elif cluster_choice == "📱 Cluster 1: Social Engagement":
+        elif cluster_choice == "📱 Cluster 1: Compromiso Social":
             render_cluster1(filtered_data)
-        elif cluster_choice == "🌍 Cluster 2: Geography & Engagement":
+        elif cluster_choice == "🌍 Cluster 2: Geografía y Compromiso":
             render_cluster2(filtered_data)
-        elif cluster_choice == "🎪 Cluster 3: APREU Activities":
+        elif cluster_choice == "🎪 Cluster 3: Actividades APREU":
             render_cluster3(filtered_data)
 
 def render_overview(data):
     """Render the overview dashboard"""
     
-    st.markdown("## 📊 Executive Overview")
+    st.markdown("## 📊 Resumen Ejecutivo")
     st.markdown("---")
     
     if data is None:
-        st.error("⚠️ Data not loaded. Please check the data file.")
+        st.error("⚠️ Datos no cargados. Por favor revisa el archivo de datos.")
         return
     
     # Calculate key metrics with clear pipeline
@@ -467,162 +467,162 @@ def render_overview(data):
     close_rate = (closed_count / working_count * 100) if working_count > 0 else 0
     
     # Display metrics
-    st.markdown("### 📊 Contact Pipeline")
+    st.markdown("### 📊 Pipeline de Contactos")
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Contacts", f"{total_contacts:,}", help="All contacts in the dataset")
+        st.metric("Total Contactos", f"{total_contacts:,}", help="Todos los contactos en el dataset")
     
     with col2:
         apreu_pct = (apreu_count / total_contacts * 100) if total_contacts > 0 else 0
-        st.metric("APREU Contacts", f"{apreu_count:,}", delta=f"{apreu_pct:.1f}%", help="Contacts where Propiedad = APREU")
+        st.metric("Contactos APREU", f"{apreu_count:,}", delta=f"{apreu_pct:.1f}%", help="Contactos donde Propiedad = APREU")
     
     with col3:
         removed = apreu_count - working_count
-        st.metric("After Cleanup", f"{working_count:,}", delta=f"-{removed:,}", delta_color="off", help="APREU contacts after removing 'other' and 'subscriber' lifecycle stages")
+        st.metric("Después de Limpieza", f"{working_count:,}", delta=f"-{removed:,}", delta_color="off", help="Contactos APREU después de remover etapas 'other' y 'subscriber' del ciclo de vida")
     
     with col4:
-        st.metric("Closed Deals", f"{closed_count:,}", delta=f"{close_rate:.1f}%", help="Closed contacts from working set")
+        st.metric("Tratos Cerrados", f"{closed_count:,}", delta=f"{close_rate:.1f}%", help="Contactos cerrados del conjunto de trabajo")
     
     st.markdown("---")
     
     # Cluster Comparison Section
-    st.markdown("### 🎯 Segmentation Strategies Comparison")
+    st.markdown("### 🎯 Comparación de Estrategias de Segmentación")
     
     tab1, tab2, tab3 = st.tabs(["📱 Cluster 1", "🌍 Cluster 2", "🎪 Cluster 3"])
     
     with tab1:
         st.markdown("""
-        #### Cluster 1: Socially Engaged Prospects
+        #### Cluster 1: Prospectos Socialmente Comprometidos
         
-        **Goal:** Identify and segment prospects with social media activity using advanced historical data analysis 
-        and multi-platform detection.
+        **Objetivo:** Identificar y segmentar prospectos con actividad en redes sociales usando análisis avanzado de datos históricos 
+        y detección multi-plataforma.
         
-        **Key Features:**
-        - ✅ Comprehensive historical data analysis (ALL values, not just latest)
-        - ✅ Multi-platform detection (12+ platforms: Instagram, TikTok, LinkedIn, Facebook, etc.)
-        - ✅ Smart filtering for APREU contacts
-        - ✅ Intelligent platform tagging using historical + click data
-        - ✅ Advanced closure analysis with time-to-close buckets
-        - ✅ Lifecycle integration tracking
-        - ✅ Interactive filters (segment, platform, social clicks, engagement score)
-        - ✅ Performance benchmarking with quartile analysis
-        - ✅ CSV exports (full data, summary, platform breakdown)
+        **Características Clave:**
+        - ✅ Análisis integral de datos históricos (TODOS los valores, no solo el más reciente)
+        - ✅ Detección multi-plataforma (12+ plataformas: Instagram, TikTok, LinkedIn, Facebook, etc.)
+        - ✅ Filtrado inteligente para contactos APREU
+        - ✅ Etiquetado inteligente de plataformas usando datos históricos + clics
+        - ✅ Análisis avanzado de cierre con buckets de tiempo-hasta-cierre
+        - ✅ Seguimiento de integración del ciclo de vida
+        - ✅ Filtros interactivos (segmento, plataforma, clics sociales, puntuación de compromiso)
+        - ✅ Benchmarking de rendimiento con análisis de cuartiles
+        - ✅ Exportaciones CSV (datos completos, resumen, desglose por plataforma)
         
-        **Segments:**
-        - **1A. High Engagement + Social Activity**: Active social users, higher close rate
-        - **1B. Low Engagement + Social Activity**: Social presence but minimal interaction
+        **Segmentos:**
+        - **1A. Alto Compromiso + Actividad Social**: Usuarios sociales activos, mayor tasa de cierre
+        - **1B. Bajo Compromiso + Actividad Social**: Presencia social pero interacción mínima
         
-        **Platform Overlays:** Combined engagement + platform tags (e.g., "1A + Google_Ads", "1B + Facebook")
+        **Superposiciones de Plataforma:** Compromiso combinado + etiquetas de plataforma (ej., "1A + Google_Ads", "1B + Facebook")
         
-        **Available Tabs:** Overview, Segment Analysis, Platform Analysis, Business Outcomes, Fast/Slow Closers, Academic Period, Performance Benchmarks, Contact Lookup
+        **Pestañas Disponibles:** Resumen, Análisis de Segmento, Análisis de Plataforma, Resultados de Negocio, Cerradores Rápidos/Lentos, Período Académico, Benchmarks de Rendimiento, Búsqueda de Contactos
         """)
         
         col1, col2 = st.columns(2)
         with col1:
-            st.info("**Primary Use Case:** Social media team optimization, platform budget allocation, retargeting campaigns")
+            st.info("**Caso de Uso Principal:** Optimización del equipo de redes sociales, asignación de presupuesto por plataforma, campañas de remarketing")
         with col2:
-            st.success("**Expected:** Engaged contacts split into 1A/1B with platform tags")
+            st.success("**Esperado:** Contactos comprometidos divididos en 1A/1B con etiquetas de plataforma")
     
     with tab2:
         st.markdown("""
-        #### Cluster 2: Geography & Engagement Segmentation
+        #### Cluster 2: Segmentación por Geografía y Compromiso
         
-        **Goal:** Segment contacts by geography (Local/Domestic/International) and engagement level 
-        into 6 actionable subclusters.
+        **Objetivo:** Segmentar contactos por geografía (Local/Foráneo/Internacional) y nivel de compromiso 
+        en 6 subclusters accionables.
         
-        **Key Features:**
-        - ✅ Geographic classification (Local, Domestic, International) - Configurable!
-        - ✅ Engagement scoring per geo tier with quantile thresholds (70th percentile)
-        - ✅ Enhanced state normalization (32 Mexican states + CDMX variants)
-        - ✅ State-level performance analysis and tier classification
-        - ✅ Dynamic geo configuration (change home country & local region)
-        - ✅ Time-to-close analysis by geography
-        - ✅ Interactive filters (segment, geo tier, country, engagement level)
-        - ✅ Performance benchmarking by geography and country
-        - ✅ CSV exports (full data, summary, geography breakdown)
+        **Características Clave:**
+        - ✅ Clasificación geográfica (Local, Foráneo, Internacional) - ¡Configurable!
+        - ✅ Puntuación de compromiso por nivel geo con umbrales de cuantil (percentil 70)
+        - ✅ Normalización mejorada de estados (32 estados mexicanos + variantes CDMX)
+        - ✅ Análisis de rendimiento a nivel estatal y clasificación de niveles
+        - ✅ Configuración geo dinámica (cambiar país de origen y región local)
+        - ✅ Análisis de tiempo-hasta-cierre por geografía
+        - ✅ Filtros interactivos (segmento, nivel geo, país, nivel de compromiso)
+        - ✅ Benchmarking de rendimiento por geografía y país
+        - ✅ Exportaciones CSV (datos completos, resumen, desglose geográfico)
         
-        **Segments:**
-        - **2A**: Domestic (non-local), High Engagement
-        - **2B**: Domestic (non-local), Low Engagement  
-        - **2C**: International, High Engagement
-        - **2D**: International, Low Engagement
-        - **2E**: Local, High Engagement
-        - **2F**: Local, Low Engagement
+        **Segmentos:**
+        - **2A**: Foráneo (no local), Alto Compromiso
+        - **2B**: Foráneo (no local), Bajo Compromiso  
+        - **2C**: Internacional, Alto Compromiso
+        - **2D**: Internacional, Bajo Compromiso
+        - **2E**: Local, Alto Compromiso
+        - **2F**: Local, Bajo Compromiso
         
-        **Available Tabs:** Overview, Segment Analysis, Geography Analysis, Business Outcomes, Fast/Slow Closers, Performance Benchmarks, Contact Lookup
+        **Pestañas Disponibles:** Resumen, Análisis de Segmento, Análisis Geográfico, Resultados de Negocio, Cerradores Rápidos/Lentos, Benchmarks de Rendimiento, Búsqueda de Contactos
         """)
         
         col1, col2 = st.columns(2)
         with col1:
-            st.info("**Primary Use Case:** Regional marketing campaigns, international recruitment, local QRO engagement")
+            st.info("**Caso de Uso Principal:** Campañas de marketing regional, reclutamiento internacional, compromiso local QRO")
         with col2:
-            st.success("**Expected Segments:** 6 core segments (2A-2F) + state-specific sub-segments for domestic")
+            st.success("**Segmentos Esperados:** 6 segmentos principales (2A-2F) + sub-segmentos específicos por estado para foráneos")
     
     with tab3:
         st.markdown("""
-        #### Cluster 3: Promotion-driven Converters (APREU Activities)
+        #### Cluster 3: Convertidores Impulsados por Promoción (Actividades APREU)
         
-        **Goal:** Segment contacts by promotional activities and entry channels using comprehensive 
-        historical APREU activity analysis.
+        **Objetivo:** Segmentar contactos por actividades promocionales y canales de entrada usando análisis 
+        integral de actividades históricas APREU.
         
-        **Key Features:**
-        - ✅ Comprehensive historical APREU activity parsing (ALL events attended)
-        - ✅ Multi-activity detection (Open Day, Fogatada, TDLA, Gira Panamá, WhatsApp, etc.)
-        - ✅ Smart entry channel classification (Digital/Event/Messaging/Niche)
-        - ✅ Preparatoria cross-analysis per activity
-        - ✅ Conversion event tracking (first + recent conversion)
-        - ✅ Activity journey visualization per contact
-        - ✅ Email engagement and conversion timeline analysis
-        - ✅ Academic period analysis with seasonal trends
+        **Características Clave:**
+        - ✅ Análisis integral de actividades históricas APREU (TODOS los eventos asistidos)
+        - ✅ Detección multi-actividad (Open Day, Fogatada, TDLA, Gira Panamá, WhatsApp, etc.)
+        - ✅ Clasificación inteligente de canales de entrada (Digital/Evento/Mensajería/Nicho)
+        - ✅ Análisis cruzado de preparatoria por actividad
+        - ✅ Seguimiento de eventos de conversión (primera + conversión reciente)
+        - ✅ Visualización del viaje de actividad por contacto
+        - ✅ Análisis de compromiso por email y línea de tiempo de conversión
+        - ✅ Análisis de período académico con tendencias estacionales
         
-        **Segments:**
-        - **3A. Digital-first**: Website, forms, online entries → automated sequences
-        - **3B. Event-first**: Open Day, Fogatada, live events → 48h follow-up
-        - **3C. Messaging-first**: WhatsApp, direct contact → personalized, fast response
-        - **3D. Niche/Low-volume**: Specialty programs, small campaigns → ROI evaluation
+        **Segmentos:**
+        - **3A. Digital-primero**: Sitio web, formularios, entradas en línea → secuencias automatizadas
+        - **3B. Evento-primero**: Open Day, Fogatada, eventos en vivo → seguimiento 48h
+        - **3C. Mensajería-primero**: WhatsApp, contacto directo → respuesta personalizada y rápida
+        - **3D. Nicho/Bajo-volumen**: Programas especializados, campañas pequeñas → evaluación de ROI
         
-        **Available Tabs:** Overview, Segment Analysis, Activity Analysis, Preparatoria Analysis, Email & Conversion, Fast/Slow Closers, Academic Period, Contact Lookup
+        **Pestañas Disponibles:** Resumen, Análisis de Segmento, Análisis de Actividad, Análisis de Preparatoria, Email y Conversión, Cerradores Rápidos/Lentos, Período Académico, Búsqueda de Contactos
         """)
         
         col1, col2 = st.columns(2)
         with col1:
-            st.info("**Primary Use Case:** Event ROI analysis, APREU campaign optimization, preparatoria partnerships")
+            st.info("**Caso de Uso Principal:** Análisis de ROI de eventos, optimización de campañas APREU, asociaciones con preparatorias")
         with col2:
-            st.success("**Expected Segments:** 4 entry channels (3A-3D) with activity and preparatoria insights")
+            st.success("**Segmentos Esperados:** 4 canales de entrada (3A-3D) con insights de actividad y preparatoria")
     
     st.markdown("---")
     
     # Quick Start Guide
-    st.markdown("### 🚀 Quick Start Guide")
+    st.markdown("### 🚀 Guía de Inicio Rápido")
     
     st.markdown("""
-    **How to use this application:**
+    **Cómo usar esta aplicación:**
     
-    1. **Select a cluster** from the sidebar navigation
-    2. **Explore segment distributions** and performance metrics
-    3. **Analyze detailed breakdowns** using interactive filters
-    4. **Search individual contacts** using the contact lookup tool
-    5. **Export data** for further analysis or campaign activation
+    1. **Selecciona un cluster** desde la navegación de la barra lateral
+    2. **Explora distribuciones de segmentos** y métricas de rendimiento
+    3. **Analiza desgloses detallados** usando filtros interactivos
+    4. **Busca contactos individuales** usando la herramienta de búsqueda de contactos
+    5. **Exporta datos** para análisis adicional o activación de campañas
     
-    **Navigation Tips:**
-    - Use the **sidebar** to switch between clusters
-    - Each cluster has **multiple tabs** for different analyses
-    - **Hover over charts** for detailed information
-    - Use **filters** to drill down into specific segments
-    - The **contact lookup** feature is available in each cluster
+    **Consejos de Navegación:**
+    - Usa la **barra lateral** para cambiar entre clusters
+    - Cada cluster tiene **múltiples pestañas** para diferentes análisis
+    - **Pasa el cursor sobre los gráficos** para información detallada
+    - Usa **filtros** para profundizar en segmentos específicos
+    - La función de **búsqueda de contactos** está disponible en cada cluster
     """)
     
     st.markdown("---")
     
     # Data Quality Summary
-    with st.expander("📋 Data Quality Summary", expanded=False):
-        st.markdown("#### Data Coverage by Cluster")
+    with st.expander("📋 Resumen de Calidad de Datos", expanded=False):
+        st.markdown("#### Cobertura de Datos por Cluster")
         
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.markdown("**Cluster 1: Social Engagement**")
+            st.markdown("**Cluster 1: Compromiso Social**")
             social_fields = ['Original Source', 'Latest Traffic Source', 'Broadcast Clicks', 
                            'LinkedIn Clicks', 'Twitter Clicks', 'Facebook Clicks']
             # Handle both original and lowercase column names
@@ -632,10 +632,10 @@ def render_overview(data):
                     coverage += data[field].notna().sum()
                 elif field.lower().replace(' ', '_') in data.columns:
                     coverage += data[field.lower().replace(' ', '_')].notna().sum()
-            st.metric("Data Points Available", f"{coverage:,}")
+            st.metric("Puntos de Datos Disponibles", f"{coverage:,}")
         
         with col2:
-            st.markdown("**Cluster 2: Geography**")
+            st.markdown("**Cluster 2: Geografía**")
             geo_fields = ['IP Country', 'IP State/Region', 'País preparatoria BPM', 'Estado de preparatoria BPM']
             coverage = 0
             for field in geo_fields:
@@ -643,10 +643,10 @@ def render_overview(data):
                     coverage += data[field].notna().sum()
                 elif field.lower().replace(' ', '_').replace('/', '_') in data.columns:
                     coverage += data[field.lower().replace(' ', '_').replace('/', '_')].notna().sum()
-            st.metric("Data Points Available", f"{coverage:,}")
+            st.metric("Puntos de Datos Disponibles", f"{coverage:,}")
         
         with col3:
-            st.markdown("**Cluster 3: APREU Activities**")
+            st.markdown("**Cluster 3: Actividades APREU**")
             apreu_fields = ['Actividades de promoción APREU', 'First Conversion', 'Recent Conversion']
             coverage = 0
             for field in apreu_fields:
@@ -654,7 +654,7 @@ def render_overview(data):
                     coverage += data[field].notna().sum()
                 elif field.lower().replace(' ', '_') in data.columns:
                     coverage += data[field.lower().replace(' ', '_')].notna().sum()
-            st.metric("Data Points Available", f"{coverage:,}")
+            st.metric("Puntos de Datos Disponibles", f"{coverage:,}")
 
 if __name__ == "__main__":
     main()

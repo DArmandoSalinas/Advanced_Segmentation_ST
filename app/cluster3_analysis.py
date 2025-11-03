@@ -1,6 +1,6 @@
 """
-Cluster 3: Promotion-driven Converters (APREU Activities)
-Segments contacts by promotional activities and entry channels
+Cluster 3: Convertidores Impulsados por Promoción (Actividades APREU)
+Segmenta contactos por actividades promocionales y canales de entrada
 """
 
 import streamlit as st
@@ -209,7 +209,7 @@ def process_cluster3_data(_data, cache_key=None):
         df['ttc_bucket'] = df['days_to_close'].apply(categorize_ttc)
     else:
         df['days_to_close'] = np.nan
-        df['ttc_bucket'] = "Unknown"
+        df['ttc_bucket'] = "Desconocido"
     
     # Filter for APREU contacts (matching Clusters 1 & 2 approach)
     if 'propiedad_del_contacto' in df.columns:
@@ -234,24 +234,24 @@ def process_cluster3_data(_data, cache_key=None):
         axis=1
     )
     
-    # Create segment labels
+    # Create segment labels with descriptive names
     segment_descriptions = {
-        '3A_Digital': '3A (Digital-first)',
-        '3B_Event': '3B (Event-first)',
-        '3C_Messaging': '3C (Messaging-first)',
-        '3D_Niche': '3D (Niche/Low-volume)',
-        'Unknown': 'Unknown'
+        '3A_Digital': '3A - Digital Primero (Sitio Web, Formularios)',
+        '3B_Event': '3B - Eventos Primero (Open Day, Fogatada, TDLA)',
+        '3C_Messaging': '3C - Mensajería Primero (WhatsApp, DM)',
+        '3D_Niche': '3D - Nicho/Bajo Volumen (Programas Especiales)',
+        'Unknown': 'Desconocido'
     }
     
     df['segment_c3'] = df['entry_channel'].map(segment_descriptions)
     
     # Action tags
     action_tags = {
-        '3A_Digital': 'Fast-track admission funnel + automated email sequences',
-        '3B_Event': 'Post-event follow-up within 48h + next steps communication',
-        '3C_Messaging': 'Personalized WhatsApp/email + fast response priority (<2h)',
-        '3D_Niche': 'Evaluate ROI + specialized support + consider scaling',
-        'Unknown': 'Needs classification - analyze manually'
+        '3A_Digital': 'Embudo de admisión acelerado + secuencias de email automatizadas',
+        '3B_Event': 'Seguimiento post-evento dentro de 48h + comunicación de próximos pasos',
+        '3C_Messaging': 'WhatsApp/email personalizado + prioridad de respuesta rápida (<2h)',
+        '3D_Niche': 'Evaluar ROI + soporte especializado + considerar escalamiento',
+        'Unknown': 'Necesita clasificación - analizar manualmente'
     }
     
     df['action_tag'] = df['entry_channel'].map(action_tags)
@@ -261,7 +261,7 @@ def process_cluster3_data(_data, cache_key=None):
         for field in ['prep_bpm', 'prep_name', 'prep_donde_estudia']:
             if field in row and pd.notna(row[field]) and str(row[field]).strip() not in ['', 'nan', 'None']:
                 return str(row[field]).strip()
-        return "Unknown"
+                return "Desconocido"
     
     df['preparatoria'] = df.apply(consolidate_prepa, axis=1)
     
@@ -269,7 +269,7 @@ def process_cluster3_data(_data, cache_key=None):
     if 'prep_year' in df.columns:
         def normalize_year(val):
             if pd.isna(val):
-                return "Unknown"
+                return "Desconocido"
             s = str(val).strip().lower()
             if any(x in s for x in ['1', 'primer', 'first', 'uno']):
                 return "1st Year"
@@ -278,11 +278,11 @@ def process_cluster3_data(_data, cache_key=None):
             elif any(x in s for x in ['3', 'tercer', 'third', 'tres']):
                 return "3rd Year"
             else:
-                return "Unknown"
+                return "Desconocido"
         
         df['prep_year_normalized'] = df['prep_year'].apply(normalize_year)
     else:
-        df['prep_year_normalized'] = "Unknown"
+        df['prep_year_normalized'] = "Desconocido"
     
     # Feature engineering
     df['log_sessions'] = np.log1p(df.get('num_sessions', 0))
@@ -353,8 +353,8 @@ def create_cluster3_xlsx_export(cohort):
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         # 1. Executive Summary (use cohort_export with latest values)
         exec_summary = pd.DataFrame({
-            'Metric': ['Total Contacts', 'Segments', 'Average Engagement', 'Total Closed', 'Avg Days to Close', 'Avg Activities'],
-            'Value': [
+            'Métrica': ['Total Contactos', 'Segmentos', 'Compromiso Promedio', 'Total Cerrados', 'Días Prom hasta Cierre', 'Actividades Prom'],
+            'Valor': [
                 f"{len(cohort_export):,}",
                 ', '.join(cohort_export['segment_c3'].unique()) if 'segment_c3' in cohort_export.columns else 'N/A',
                 f"{cohort_export['engagement_score'].mean():.2f}" if 'engagement_score' in cohort_export.columns else 'N/A',
@@ -452,68 +452,68 @@ def create_cluster3_xlsx_export(cohort):
 def render_cluster3(data):
     """Render Cluster 3 analysis interface"""
     
-    st.markdown("## 🎪 Cluster 3: APREU Activities & Entry Channels")
+    st.markdown("## 🎪 Cluster 3: Actividades APREU y Canales de Entrada")
     
     # About this analysis
-    with st.expander("ℹ️ About This Analysis", expanded=False):
+    with st.expander("ℹ️ Acerca de Este Análisis", expanded=False):
         st.markdown("""
-        ### 🎯 What This Cluster Does
-        **Segments contacts by promotional activities and entry channels** to optimize event ROI and conversion strategies.
+        ### 🎯 Qué Hace Este Cluster
+        **Segmenta contactos por actividades promocionales y canales de entrada** para optimizar el ROI de eventos y estrategias de conversión.
         
-        ### 👥 Who Should Use This
-        - **Event Planning Teams** - Identify high-ROI activities
-        - **APREU Coordinators** - Optimize promotional calendar
-        - **Admissions Teams** - Tailor follow-up by entry channel
-        - **Budget Planners** - Allocate resources to effective events
+        ### 👥 Quién Debe Usar Esto
+        - **Equipos de Planificación de Eventos** - Identificar actividades de alto ROI
+        - **Coordinadores APREU** - Optimizar calendario promocional
+        - **Equipos de Admisiones** - Adaptar seguimiento por canal de entrada
+        - **Planificadores de Presupuesto** - Asignar recursos a eventos efectivos
         
-        ### 🔑 Key Questions Answered
-        - Which APREU activities drive the most conversions?
-        - Do Open Day attendees close faster than WhatsApp leads?
-        - Which preparatorias should we target for events?
-        - What's the ROI of each promotional activity?
-        - How many activities does the average converter attend?
+        ### 🔑 Preguntas Clave Respondidas
+        - ¿Qué actividades APREU impulsan más conversiones?
+        - ¿Los asistentes a Open Day cierran más rápido que los leads de WhatsApp?
+        - ¿Qué preparatorias deberíamos dirigir para eventos?
+        - ¿Cuál es el ROI de cada actividad promocional?
+        - ¿Cuántas actividades atiende el convertidor promedio?
         
-        ### 📊 Segments Defined
-        - **3A (Digital-First)** - Website, forms, online entries → Automated nurture sequences
-        - **3B (Event-First)** - Open Day, Fogatada, in-person events → 48-hour follow-up
-        - **3C (Messaging-First)** - WhatsApp, direct contact → Personalized, fast response
-        - **3D (Niche/Low-Volume)** - Specialty programs, small campaigns → ROI evaluation
+        ### 📊 Segmentos Definidos
+        - **3A (Digital-Primero)** - Sitio web, formularios, entradas en línea → Secuencias de nutrición automatizadas
+        - **3B (Evento-Primero)** - Open Day, Fogatada, eventos presenciales → Seguimiento de 48 horas
+        - **3C (Mensajería-Primero)** - WhatsApp, contacto directo → Respuesta personalizada y rápida
+        - **3D (Nicho/Bajo-Volumen)** - Programas especializados, campañas pequeñas → Evaluación de ROI
         
-        ### 💡 Example Insight
-        *"3B (Event-First) contacts who attend Fogatada have a 42% close rate vs 18% for digital-only"*
-        → **Action:** Invest more in Fogatada, prioritize event follow-up within 48 hours
+        ### 💡 Ejemplo de Insight
+        *"Los contactos 3B (Evento-Primero) que asisten a Fogatada tienen una tasa de cierre del 42% vs 18% para solo digital"*
+        → **Acción:** Invertir más en Fogatada, priorizar seguimiento de eventos dentro de 48 horas
         
-        ### 🎪 Activity Journey
-        Every contact's complete APREU activity history is tracked and visualized for deep insights into conversion paths.
+        ### 🎪 Viaje de Actividad
+        Se rastrea y visualiza el historial completo de actividades APREU de cada contacto para insights profundos sobre rutas de conversión.
         """)
     
     st.markdown("---")
     
     if data is None:
-        st.error("⚠️ Data not loaded.")
+        st.error("⚠️ Datos no cargados.")
         return
     
     # Process data with cache busting based on data length
     # This ensures the cache refreshes when global filters change the data
     cache_key = f"c3_{len(data)}_{data['Record ID'].iloc[0] if 'Record ID' in data.columns else 'na'}"
-    with st.spinner("Processing Cluster 3 data..."):
+    with st.spinner("Procesando datos del Cluster 3..."):
         cohort = process_cluster3_data(data, cache_key)
     
     # Show contact count AFTER core filters (APREU + removing other/subscriber)
     if data is not None:
         active_filters = sum(1 for k in st.session_state.keys() if k.startswith('filter_'))
         if active_filters > 0:
-            st.info(f"🔍 Analyzing {len(cohort):,} contacts after applying core filters (APREU, excluding 'other'/'subscriber') + global filters")
+            st.info(f"🔍 Analizando {len(cohort):,} contactos después de aplicar filtros principales (APREU, excluyendo 'other'/'subscriber') + filtros globales")
         else:
-            st.info(f"📊 Analyzing {len(cohort):,} contacts after applying core filters (APREU, excluding 'other'/'subscriber')")
+            st.info(f"📊 Analizando {len(cohort):,} contactos después de aplicar filtros principales (APREU, excluyendo 'other'/'subscriber')")
     
     if len(cohort) == 0:
-        st.warning("No data available after filters.")
+        st.warning("No hay datos disponibles después de los filtros.")
         return
     
     # Export functionality
-    with st.expander("📥 Export Data", expanded=False):
-        st.markdown("**Download filtered data:**")
+    with st.expander("📥 Exportar Datos", expanded=False):
+        st.markdown("**Descargar datos filtrados:**")
         
         col1, col2 = st.columns(2)
         
@@ -562,7 +562,7 @@ def render_cluster3(data):
             
             csv_data = df_export.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
-                label="📄 Download Full Data (CSV)",
+                label="📄 Descargar Datos Completos (CSV)",
                 data=csv_data.encode('utf-8'),
                 file_name=f"cluster3_full_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
@@ -571,22 +571,22 @@ def render_cluster3(data):
         
         with col2:
             # Export comprehensive XLSX workbook
-            with st.spinner("Generating comprehensive Excel workbook..."):
+            with st.spinner("Generando libro de trabajo Excel integral..."):
                 xlsx_data = create_cluster3_xlsx_export(cohort)
                 st.download_button(
-                    label="📊 Download Comprehensive Workbook (XLSX) - 30+ Sheets",
+                    label="📊 Descargar Libro de Trabajo Integral (XLSX) - 30+ Hojas",
                     data=xlsx_data,
                     file_name=f"cluster3_summary_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
-                    help="Comprehensive analysis workbook with 30+ sheets: executive summary, segment performance, activity analysis, preparatoria insights, email engagement, and more!"
+                    help="Libro de trabajo de análisis integral con 30+ hojas: resumen ejecutivo, rendimiento de segmentos, análisis de actividades, insights de preparatorias, compromiso por email, ¡y más!"
                 )
     
     # Create tabs
     tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
-        "📊 Overview", "🎯 Segment Analysis", "🎪 Activity Analysis",
-        "🏫 Preparatoria Analysis", "📧 Email & Conversion", "⚡ Fast/Slow Closers", 
-        "📅 Academic Period", "🔍 Contact Lookup"
+        "📊 Resumen", "🎯 Análisis de Segmento", "🎪 Análisis de Actividad",
+        "🏫 Análisis de Preparatoria", "📧 Email y Conversión", "⚡ Cerradores Rápidos/Lentos", 
+        "📅 Período Académico", "🔍 Búsqueda de Contactos"
     ])
     
     with tab1:
@@ -615,25 +615,25 @@ def render_cluster3(data):
 
 def render_overview_tab_c3(cohort):
     """Render overview tab for Cluster 3"""
-    st.markdown("### 📊 Executive Summary")
+    st.markdown("### 📊 Resumen Ejecutivo")
     
     # Key metrics
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Contacts", f"{len(cohort):,}")
+        st.metric("Total Contactos", f"{len(cohort):,}")
     
     with col2:
         has_activities = (cohort['apreu_activity_count'] > 0).sum()
-        st.metric("With APREU Activities", f"{has_activities:,}")
+        st.metric("Con Actividades APREU", f"{has_activities:,}")
     
     with col3:
         total_activities = cohort['apreu_activity_count'].sum()
-        st.metric("Total Activities", f"{int(total_activities):,}")
+        st.metric("Total Actividades", f"{int(total_activities):,}")
     
     with col4:
         close_rate = calculate_close_rate(cohort)
-        st.metric("Overall Close Rate", f"{close_rate:.1f}%")
+        st.metric("Tasa de Cierre General", f"{close_rate:.1f}%")
     
     st.markdown("---")
     
@@ -641,21 +641,21 @@ def render_overview_tab_c3(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Entry Channel Distribution (3A-3D)")
+        st.markdown("#### Distribución de Canal de Entrada (3A-3D)")
         seg_counts = cohort['segment_c3'].value_counts()
-        seg_counts = seg_counts[seg_counts.index != 'Unknown']
+        seg_counts = seg_counts[seg_counts.index != 'Desconocido']
         
         fig = px.pie(
             values=seg_counts.values,
             names=seg_counts.index,
-            title="3A-3D Entry Channel Distribution",
+            title="Distribución de Canal de Entrada - Leyenda: 3A=Digital Primero, 3B=Eventos Primero, 3C=Mensajería Primero, 3D=Nicho/Bajo Volumen",
             hole=0.4,
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("#### Activity Participation Distribution")
+        st.markdown("#### Distribución de Participación en Actividades")
         
         # Activity count bins
         bins = [0, 1, 2, 3, 5, 10, float('inf')]
@@ -672,24 +672,24 @@ def render_overview_tab_c3(cohort):
         
         # Create DataFrame for proper Plotly plotting
         activity_df = pd.DataFrame({
-            'Activities Attended': activity_dist.index,
-            'Contacts': activity_dist.values
+            'Actividades Asistidas': activity_dist.index,
+            'Contactos': activity_dist.values
         })
         
         fig = px.bar(
             activity_df,
-            x='Activities Attended',
-            y='Contacts',
-            title="Distribution by Number of Activities"
+            x='Actividades Asistidas',
+            y='Contactos',
+            title="Distribución por Número de Actividades"
         )
         fig.update_traces(marker_color='#3498db')
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
     
     # Segment performance table
-    st.markdown("#### Segment Performance Summary")
+    st.markdown("#### Resumen de Rendimiento por Segmento")
     
-    analyzed = cohort[cohort['segment_c3'] != 'Unknown']
+    analyzed = cohort[cohort['segment_c3'] != 'Desconocido']
     
     segment_summary = analyzed.groupby('segment_c3').agg({
         'contact_id': 'count',
@@ -711,51 +711,51 @@ def render_overview_tab_c3(cohort):
 
 def render_segment_analysis_tab_c3(cohort):
     """Render segment analysis tab"""
-    st.markdown("### 🎯 Entry Channel Deep Dive (3A-3D)")
+    st.markdown("### 🎯 Análisis Profundo de Canal de Entrada (3A-3D)")
     
     # Filter out Unknown
-    analyzed = cohort[cohort['segment_c3'] != 'Unknown']
+    analyzed = cohort[cohort['segment_c3'] != 'Desconocido']
     
     # Segment selector
     segments = sorted(analyzed['segment_c3'].unique())
-    selected_segment = st.selectbox("Select Entry Channel for Details:", segments)
+    selected_segment = st.selectbox("Seleccionar Canal de Entrada para Detalles:", segments)
     
     seg_data = analyzed[analyzed['segment_c3'] == selected_segment]
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Contacts", f"{len(seg_data):,}")
+        st.metric("Total Contactos", f"{len(seg_data):,}")
     
     with col2:
         close_rate = calculate_close_rate(seg_data)
-        st.metric("Close Rate", f"{close_rate:.1f}%")
+        st.metric("Tasa de Cierre", f"{close_rate:.1f}%")
     
     with col3:
         avg_activities = seg_data['apreu_activity_count'].mean()
-        st.metric("Avg Activities", f"{avg_activities:.1f}")
+        st.metric("Actividades Promedio", f"{avg_activities:.1f}")
     
     with col4:
         avg_eng = seg_data['engagement_score'].mean()
-        st.metric("Avg Engagement", f"{avg_eng:.2f}")
+        st.metric("Compromiso Promedio", f"{avg_eng:.2f}")
     
     st.markdown("---")
     
     # Action recommendation
     if 'action_tag' in seg_data.columns:
         action = seg_data['action_tag'].iloc[0]
-        st.info(f"**Recommended Action:** {action}")
+        st.info(f"**Acción Recomendada:** {action}")
     
     # Segment description
     descriptions = {
-        '3A (Digital-first)': "Contacts entering through website, forms, and online channels. Best suited for automated nurture sequences.",
-        '3B (Event-first)': "Contacts from live and virtual events (Open Day, Fogatada, TDLA). Require immediate post-event follow-up.",
-        '3C (Messaging-first)': "Contacts via WhatsApp and direct messaging. Expect personalized, fast responses.",
-        '3D (Niche/Low-volume)': "Contacts from specialty programs and small campaigns. Evaluate ROI and consider scaling."
+        '3A - Digital Primero (Sitio Web, Formularios)': "Contactos que entran a través del sitio web, formularios y canales en línea. Mejor adecuados para secuencias de nutrición automatizadas.",
+        '3B - Eventos Primero (Open Day, Fogatada, TDLA)': "Contactos de eventos presenciales y virtuales (Open Day, Fogatada, TDLA). Requieren seguimiento inmediato post-evento.",
+        '3C - Mensajería Primero (WhatsApp, DM)': "Contactos vía WhatsApp y mensajería directa. Esperan respuestas personalizadas y rápidas.",
+        '3D - Nicho/Bajo Volumen (Programas Especiales)': "Contactos de programas especiales y campañas pequeñas. Evaluar ROI y considerar escalamiento."
     }
     
     if selected_segment in descriptions:
-        st.markdown(f"**Profile:** {descriptions[selected_segment]}")
+        st.markdown(f"**Perfil:** {descriptions[selected_segment]}")
     
     st.markdown("---")
     
@@ -763,7 +763,7 @@ def render_segment_analysis_tab_c3(cohort):
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("#### Top APREU Activities")
+        st.markdown("#### Principales Actividades APREU")
         
         # Extract activities for this segment
         all_activities = []
@@ -775,72 +775,72 @@ def render_segment_analysis_tab_c3(cohort):
             activity_counts = Counter(all_activities)
             top_activities = pd.DataFrame(
                 activity_counts.most_common(10),
-                columns=['Activity', 'Count']
+                columns=['Actividad', 'Conteo']
             )
             
             fig = px.bar(
-                top_activities, x='Count', y='Activity',
+                top_activities, x='Conteo', y='Actividad',
                 orientation='h',
-                title=f"Top 10 Activities - {selected_segment}"
+                title=f"Top 10 Actividades - {selected_segment}"
             )
             fig.update_traces(marker_color='#3498db')
             fig.update_layout(showlegend=False, height=400)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("No activities recorded for this segment.")
+            st.info("No hay actividades registradas para este segmento.")
     
     with col2:
-        st.markdown("#### Email Engagement")
+        st.markdown("#### Compromiso por Email")
         
         email_metrics = {
-            'Avg Delivered': seg_data['email_delivered'].mean(),
-            'Avg Opened': seg_data['email_opened'].mean(),
-            'Avg Clicked': seg_data['email_clicked'].mean(),
-            'Engagement Score': seg_data['email_engagement_score'].mean()
+            'Prom Entregados': seg_data['email_delivered'].mean(),
+            'Prom Abiertos': seg_data['email_opened'].mean(),
+            'Prom Clics': seg_data['email_clicked'].mean(),
+            'Puntuación Compromiso': seg_data['email_engagement_score'].mean()
         }
         
-        email_df = pd.DataFrame(list(email_metrics.items()), columns=['Metric', 'Value'])
-        email_df['Value'] = email_df['Value'].round(2)
+        email_df = pd.DataFrame(list(email_metrics.items()), columns=['Métrica', 'Valor'])
+        email_df['Valor'] = email_df['Valor'].round(2)
         
         fig = px.bar(
-            email_df, x='Metric', y='Value',
-            title=f"Email Metrics - {selected_segment}"
+            email_df, x='Métrica', y='Valor',
+            title=f"Métricas de Email - {selected_segment}"
         )
         fig.update_traces(marker_color='#2ecc71')
         fig.update_layout(showlegend=False, height=400)
         st.plotly_chart(fig, use_container_width=True)
     
     # Conversion events
-    st.markdown("#### Top Conversion Events")
+    st.markdown("#### Principales Eventos de Conversión")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("**First Conversion**")
+        st.markdown("**Primera Conversión**")
         first_conv = seg_data['first_conversion'].value_counts().head(10)
         first_conv = first_conv[first_conv.index != '']
         if len(first_conv) > 0:
-            st.dataframe(first_conv.to_frame('Count'), use_container_width=True)
+            st.dataframe(first_conv.to_frame('Conteo'), use_container_width=True)
         else:
-            st.info("No conversion data available.")
+            st.info("No hay datos de conversión disponibles.")
     
     with col2:
-        st.markdown("**Recent Conversion**")
+        st.markdown("**Conversión Reciente**")
         recent_conv = seg_data['recent_conversion'].value_counts().head(10)
         recent_conv = recent_conv[recent_conv.index != '']
         if len(recent_conv) > 0:
-            st.dataframe(recent_conv.to_frame('Count'), use_container_width=True)
+            st.dataframe(recent_conv.to_frame('Conteo'), use_container_width=True)
         else:
-            st.info("No conversion data available.")
+            st.info("No hay datos de conversión disponibles.")
 
 def render_activity_analysis_tab(cohort):
     """Render activity analysis tab"""
-    st.markdown("### 🎪 APREU Activity Analysis")
+    st.markdown("### 🎪 Análisis de Actividades APREU")
     
     # Filter to contacts with activities
     with_activities = cohort[cohort['apreu_activity_count'] > 0]
     
-    st.markdown(f"**Contacts with APREU activities:** {len(with_activities):,} out of {len(cohort):,}")
+    st.markdown(f"**Contactos con actividades APREU:** {len(with_activities):,} de {len(cohort):,}")
     
     # Extract all activities
     all_activities = []
@@ -849,28 +849,28 @@ def render_activity_analysis_tab(cohort):
             all_activities.extend(activities_list)
     
     if not all_activities:
-        st.warning("No APREU activities found in the dataset.")
+        st.warning("No se encontraron actividades APREU en el dataset.")
         return
     
-    st.markdown(f"**Total activity instances:** {len(all_activities):,}")
+    st.markdown(f"**Total de instancias de actividades:** {len(all_activities):,}")
     
     # Top activities
-    st.markdown("#### Top 20 APREU Activities")
+    st.markdown("#### Top 20 Actividades APREU")
     
     activity_counts = Counter(all_activities)
     top_activities_df = pd.DataFrame(
         activity_counts.most_common(20),
-        columns=['Activity', 'Count']
+        columns=['Actividad', 'Conteo']
     )
-    top_activities_df['Percentage'] = (
-        top_activities_df['Count'] / top_activities_df['Count'].sum() * 100
+    top_activities_df['Porcentaje'] = (
+        top_activities_df['Conteo'] / top_activities_df['Conteo'].sum() * 100
     ).round(2)
     
     fig = px.bar(
-        top_activities_df, x='Count', y='Activity',
+        top_activities_df, x='Conteo', y='Actividad',
         orientation='h',
-        title="Top 20 APREU Activities by Volume",
-        hover_data=['Percentage']
+        title="Top 20 Actividades APREU por Volumen",
+        hover_data=['Porcentaje']
     )
     fig.update_traces(marker_color='#9b59b6')
     fig.update_layout(showlegend=False, height=600)
@@ -879,10 +879,10 @@ def render_activity_analysis_tab(cohort):
     st.markdown("---")
     
     # Activity conversion rates
-    st.markdown("#### Activity Conversion Analysis")
+    st.markdown("#### Análisis de Conversión por Actividad")
     
     activity_conversion = []
-    for activity in top_activities_df.head(15)['Activity']:
+    for activity in top_activities_df.head(15)['Actividad']:
         contacts_with_activity = with_activities[
             with_activities['apreu_activities_list'].apply(
                 lambda x: activity in x if x else False
@@ -897,21 +897,21 @@ def render_activity_analysis_tab(cohort):
             avg_days = contacts_with_activity['days_to_close'].mean()
             
             activity_conversion.append({
-                'Activity': activity,
+                'Actividad': activity,
                 'Total': len(contacts_with_activity),
-                'Closed': int(closed),
-                'Close Rate %': round(close_rate, 2),
-                'Avg Days': round(avg_days, 1) if pd.notna(avg_days) else np.nan
+                'Cerrados': int(closed),
+                'Tasa de Cierre %': round(close_rate, 2),
+                'Días Prom': round(avg_days, 1) if pd.notna(avg_days) else np.nan
             })
     
     if activity_conversion:
-        activity_conv_df = pd.DataFrame(activity_conversion).sort_values('Close Rate %', ascending=False)
+        activity_conv_df = pd.DataFrame(activity_conversion).sort_values('Tasa de Cierre %', ascending=False)
         st.dataframe(activity_conv_df, use_container_width=True, height=400)
     
     st.markdown("---")
     
     # Activity by entry channel
-    st.markdown("#### Activity Distribution by Entry Channel")
+    st.markdown("#### Distribución de Actividades por Canal de Entrada")
     
     # Create mapping
     activity_segment_map = []
@@ -928,7 +928,7 @@ def render_activity_analysis_tab(cohort):
         activity_segment_df = pd.DataFrame(activity_segment_map)
         
         # Get top 10 activities
-        top_10_activities = top_activities_df.head(10)['Activity'].tolist()
+        top_10_activities = top_activities_df.head(10)['Actividad'].tolist()
         
         activity_segment_filtered = activity_segment_df[
             activity_segment_df['activity'].isin(top_10_activities)
@@ -943,8 +943,8 @@ def render_activity_analysis_tab(cohort):
             fig = px.bar(
                 activity_by_segment,
                 barmode='group',
-                title="Top 10 Activities by Entry Channel",
-                labels={'value': 'Count', 'variable': 'Entry Channel'},
+                title="Top 10 Actividades por Canal de Entrada",
+                labels={'value': 'Conteo', 'variable': 'Canal de Entrada'},
                 color_discrete_sequence=px.colors.qualitative.Set2
             )
             fig.update_layout(height=500)
@@ -952,31 +952,31 @@ def render_activity_analysis_tab(cohort):
 
 def render_preparatoria_analysis_tab(cohort):
     """Render preparatoria analysis tab"""
-    st.markdown("### 🏫 Preparatoria Analysis")
+    st.markdown("### 🏫 Análisis de Preparatoria")
     
     # Filter to contacts with preparatoria data
     with_prepa = cohort[cohort['preparatoria'] != 'Unknown']
     
     if len(with_prepa) == 0:
-        st.warning("No preparatoria data available.")
+        st.warning("No hay datos de preparatoria disponibles.")
         return
     
-    st.markdown(f"**Contacts with preparatoria data:** {len(with_prepa):,} out of {len(cohort):,}")
+    st.markdown(f"**Contactos con datos de preparatoria:** {len(with_prepa):,} de {len(cohort):,}")
     
     # Top preparatorias
-    st.markdown("#### Top 20 Preparatorias by Volume")
+    st.markdown("#### Top 20 Preparatorias por Volumen")
     
     top_prepas = with_prepa['preparatoria'].value_counts().head(20)
     
     # Create DataFrame for proper Plotly plotting
     prepas_df = pd.DataFrame({
         'Preparatoria': top_prepas.index,
-        'Contacts': top_prepas.values
+        'Contactos': top_prepas.values
     })
     
     fig = px.bar(
         prepas_df,
-        x='Contacts',
+        x='Contactos',
         y='Preparatoria',
         orientation='h',
         title="Top 20 Preparatorias"
@@ -988,7 +988,7 @@ def render_preparatoria_analysis_tab(cohort):
     st.markdown("---")
     
     # Preparatoria performance
-    st.markdown("#### Preparatoria Performance Metrics")
+    st.markdown("#### Métricas de Rendimiento por Preparatoria")
     
     top_prepa_list = top_prepas.head(15).index.tolist()
     top_prepa_data = with_prepa[with_prepa['preparatoria'].isin(top_prepa_list)]
@@ -1015,7 +1015,7 @@ def render_preparatoria_analysis_tab(cohort):
     st.markdown("---")
     
     # Preparatoria by entry channel
-    st.markdown("#### Preparatoria Distribution by Entry Channel")
+    st.markdown("#### Distribución de Preparatorias por Canal de Entrada")
     
     analyzed = top_prepa_data[top_prepa_data['segment_c3'] != 'Unknown']
     
@@ -1028,22 +1028,22 @@ def render_preparatoria_analysis_tab(cohort):
         fig = px.bar(
             prepa_by_segment,
             barmode='group',
-            title="Top 10 Preparatorias by Entry Channel",
-            labels={'value': 'Count', 'variable': 'Entry Channel'},
+            title="Top 10 Preparatorias por Canal de Entrada",
+            labels={'value': 'Conteo', 'variable': 'Canal de Entrada'},
             color_discrete_sequence=px.colors.qualitative.Set3
         )
         fig.update_layout(height=500)
         st.plotly_chart(fig, use_container_width=True)
     
     # Preparatoria year distribution
-    st.markdown("#### Preparatoria Year Distribution")
+    st.markdown("#### Distribución por Año de Preparatoria")
     
     prep_year_dist = with_prepa['prep_year_normalized'].value_counts()
     
     fig = px.pie(
         values=prep_year_dist.values,
         names=prep_year_dist.index,
-        title="Preparatoria Year Distribution",
+        title="Distribución por Año de Preparatoria",
         hole=0.3
     )
     st.plotly_chart(fig, use_container_width=True)
@@ -1051,8 +1051,8 @@ def render_preparatoria_analysis_tab(cohort):
     st.markdown("---")
     
     # Activity Participation % by Preparatoria (NEW - from notebook)
-    st.markdown("#### Activity Participation % by Preparatoria")
-    st.markdown("*Shows what percentage of each preparatoria's contacts attended each activity*")
+    st.markdown("#### Participación en Actividades % por Preparatoria")
+    st.markdown("*Muestra qué porcentaje de los contactos de cada preparatoria asistió a cada actividad*")
     
     # Get top activities
     all_activities = []
@@ -1073,7 +1073,7 @@ def render_preparatoria_analysis_tab(cohort):
             
             row_data = {
                 'Preparatoria': prepa,
-                'Total Contacts': total_prepa_contacts
+                'Total Contactos': total_prepa_contacts
             }
             
             # For each activity, calculate what % of this prepa's contacts attended it
@@ -1091,12 +1091,12 @@ def render_preparatoria_analysis_tab(cohort):
         
         if prepa_activity_participation:
             prepa_activity_pct_df = pd.DataFrame(prepa_activity_participation)
-            prepa_activity_pct_df = prepa_activity_pct_df.sort_values('Total Contacts', ascending=False)
+            prepa_activity_pct_df = prepa_activity_pct_df.sort_values('Total Contactos', ascending=False)
             
             # Display with styled background (higher % = darker blue)
             st.dataframe(
                 prepa_activity_pct_df.style.background_gradient(
-                    subset=[col for col in prepa_activity_pct_df.columns if col not in ['Preparatoria', 'Total Contacts']],
+                    subset=[col for col in prepa_activity_pct_df.columns if col not in ['Preparatoria', 'Total Contactos']],
                     cmap='Blues',
                     vmin=0,
                     vmax=100
@@ -1105,22 +1105,22 @@ def render_preparatoria_analysis_tab(cohort):
                 height=500
             )
             
-            st.markdown("💡 **Insight:** Higher percentages (darker blue) indicate activities that are particularly popular with specific preparatorias. Use this to target promotional activities to specific high schools.")
+            st.markdown("💡 **Insight:** Porcentajes más altos (azul más oscuro) indican actividades que son particularmente populares con preparatorias específicas. Usa esto para dirigir actividades promocionales a escuelas secundarias específicas.")
     else:
-        st.info("No activity data available for participation analysis.")
+        st.info("No hay datos de actividad disponibles para análisis de participación.")
 
 def render_email_conversion_tab_c3(cohort):
     """Render email engagement and conversion timeline analysis"""
-    st.markdown("### 📧 Email Engagement & Conversion Timeline")
+    st.markdown("### 📧 Compromiso por Email y Línea de Tiempo de Conversión")
     
     # Email Engagement Metrics
-    st.markdown("#### 📨 Email Engagement by Entry Channel")
+    st.markdown("#### 📨 Compromiso por Email por Canal de Entrada")
     
     # FIX: Use correct column names that match the data processing
     email_fields = {
-        'Email Delivered': 'email_delivered',
-        'Email Opened': 'email_opened',
-        'Email Clicked': 'email_clicked'
+        'Email Entregados': 'email_delivered',
+        'Email Abiertos': 'email_opened',
+        'Email Clics': 'email_clicked'
     }
     
     # Check which email fields are available
@@ -1139,7 +1139,7 @@ def render_email_conversion_tab_c3(cohort):
         
         # Email engagement score distribution
         if 'email_engagement_score' in cohort.columns or any('email' in col.lower() for col in cohort.columns):
-            st.markdown("**Email Engagement Distribution:**")
+            st.markdown("**Distribución de Compromiso por Email:**")
             
             # Calculate email engagement if not present
             if 'email_engagement_score' not in cohort.columns and available_email_fields:
@@ -1154,60 +1154,60 @@ def render_email_conversion_tab_c3(cohort):
             
             if 'email_engagement_score' in cohort_temp.columns:
                 email_dist = cohort_temp.groupby('segment_c3')['email_engagement_score'].describe()[['mean', '50%', 'max']]
-                email_dist.columns = ['Mean', 'Median', 'Max']
+                email_dist.columns = ['Promedio', 'Mediana', 'Máximo']
                 st.dataframe(email_dist.round(2), use_container_width=True)
         
         st.markdown("---")
     else:
-        st.info("Email engagement data not available in dataset")
+        st.info("Datos de compromiso por email no disponibles en el dataset")
     
     # Conversion Timeline Analysis
-    st.markdown("#### ⏱️ Conversion Timeline & Journey Duration")
+    st.markdown("#### ⏱️ Línea de Tiempo de Conversión y Duración del Recorrido")
     
     conversion_fields = {
-        'first_conversion': 'First Conversion Event',
-        'recent_conversion': 'Recent Conversion Event',
-        'conversion_journey_days': 'Journey Duration (days)'
+        'first_conversion': 'Evento de Primera Conversión',
+        'recent_conversion': 'Evento de Conversión Reciente',
+        'conversion_journey_days': 'Duración del Recorrido (días)'
     }
     
     has_conversion_data = any(field in cohort.columns for field in conversion_fields.keys())
     
     if has_conversion_data:
         # Conversion event counts
-        st.markdown("**Conversion Event Distribution:**")
+        st.markdown("**Distribución de Eventos de Conversión:**")
         
         if 'first_conversion' in cohort.columns:
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("**Top First Conversion Events:**")
+                st.markdown("**Principales Eventos de Primera Conversión:**")
                 first_conv = cohort['first_conversion'].value_counts().head(10)
                 st.dataframe(pd.DataFrame({
-                    'Event': first_conv.index,
-                    'Count': first_conv.values,
+                    'Evento': first_conv.index,
+                    'Conteo': first_conv.values,
                     '%': (first_conv.values / first_conv.sum() * 100).round(1)
                 }), use_container_width=True, hide_index=True)
             
             with col2:
                 if 'recent_conversion' in cohort.columns:
-                    st.markdown("**Top Recent Conversion Events:**")
+                    st.markdown("**Principales Eventos de Conversión Reciente:**")
                     recent_conv = cohort['recent_conversion'].value_counts().head(10)
                     st.dataframe(pd.DataFrame({
-                        'Event': recent_conv.index,
-                        'Count': recent_conv.values,
+                        'Evento': recent_conv.index,
+                        'Conteo': recent_conv.values,
                         '%': (recent_conv.values / recent_conv.sum() * 100).round(1)
                     }), use_container_width=True, hide_index=True)
         
         # Conversion journey duration
         if 'conversion_journey_days' in cohort.columns:
             st.markdown("---")
-            st.markdown("**Conversion Journey Duration Analysis:**")
+            st.markdown("**Análisis de Duración del Recorrido de Conversión:**")
             
             journey_stats = cohort[cohort['conversion_journey_days'].notna()].groupby('segment_c3')['conversion_journey_days'].agg([
                 'count', 'mean', 'median', 'min', 'max'
             ]).round(1)
             
-            journey_stats.columns = ['Contacts', 'Avg Days', 'Median Days', 'Min Days', 'Max Days']
+            journey_stats.columns = ['Contactos', 'Días Prom', 'Días Mediana', 'Días Mín', 'Días Máx']
             
             st.dataframe(journey_stats, use_container_width=True)
             
@@ -1215,46 +1215,46 @@ def render_email_conversion_tab_c3(cohort):
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("**Journey Duration Distribution:**")
+                st.markdown("**Distribución de Duración del Recorrido:**")
                 journey_buckets = pd.cut(
                     cohort['conversion_journey_days'].dropna(),
                     bins=[0, 7, 30, 60, 90, 180, float('inf')],
-                    labels=['0-7 days', '8-30 days', '31-60 days', '61-90 days', '91-180 days', '180+ days']
+                    labels=['0-7 días', '8-30 días', '31-60 días', '61-90 días', '91-180 días', '180+ días']
                 )
                 journey_dist = journey_buckets.value_counts().sort_index()
                 
                 # Create DataFrame for proper Plotly plotting
                 journey_buckets_df = pd.DataFrame({
-                    'Duration': journey_dist.index,
-                    'Contacts': journey_dist.values
+                    'Duración': journey_dist.index,
+                    'Contactos': journey_dist.values
                 })
                 
                 fig = px.bar(
                     journey_buckets_df,
-                    x='Duration',
-                    y='Contacts',
-                    title="Conversion Journey Duration Buckets"
+                    x='Duración',
+                    y='Contactos',
+                    title="Categorías de Duración del Recorrido de Conversión"
                 )
                 fig.update_traces(marker_color='#3498db')
                 fig.update_layout(showlegend=False)
                 st.plotly_chart(fig, use_container_width=True)
             
             with col2:
-                st.markdown("**Average Journey by Segment:**")
+                st.markdown("**Recorrido Promedio por Segmento:**")
                 avg_journey = cohort[cohort['conversion_journey_days'].notna()].groupby('segment_c3')['conversion_journey_days'].mean().sort_values()
                 
                 # Create DataFrame for proper Plotly plotting
                 journey_df = pd.DataFrame({
-                    'Segment': avg_journey.index,
-                    'Days': avg_journey.values
+                    'Segmento': avg_journey.index,
+                    'Días': avg_journey.values
                 })
                 
                 fig = px.bar(
                     journey_df,
-                    x='Days',
-                    y='Segment',
+                    x='Días',
+                    y='Segmento',
                     orientation='h',
-                    title="Avg Journey Duration by Entry Channel"
+                    title="Duración Promedio del Recorrido por Canal de Entrada"
                 )
                 # Use a single professional color
                 fig.update_traces(marker_color='#2ecc71')
@@ -1287,11 +1287,11 @@ def render_email_conversion_tab_c3(cohort):
                 conv_df = pd.DataFrame(conv_performance).sort_values('Close Rate %', ascending=False)
                 st.dataframe(conv_df, use_container_width=True)
     else:
-        st.info("Conversion timeline data not available in dataset")
+        st.info("Datos de línea de tiempo de conversión no disponibles en el dataset")
     
     # Lifecycle Stage Analysis
     st.markdown("---")
-    st.markdown("#### 🔄 Lifecycle Stage Distribution")
+    st.markdown("#### 🔄 Distribución de Etapa del Ciclo de Vida")
     
     if 'lifecycle_stage' in cohort.columns:
         lifecycle_by_segment = pd.crosstab(
@@ -1306,21 +1306,21 @@ def render_email_conversion_tab_c3(cohort):
         
         st.dataframe(lifecycle_filtered.round(1), use_container_width=True)
     else:
-        st.info("Lifecycle stage data not available")
+        st.info("Datos de etapa del ciclo de vida no disponibles")
 
 def render_fast_slow_closers_c3(cohort):
     """Render fast/slow closers analysis for Cluster 3"""
-    st.markdown("### ⚡ Fast vs Slow Closers Analysis")
-    st.markdown("Identify which Entry Channel × Activity combinations close fastest")
+    st.markdown("### ⚡ Análisis de Cerradores Rápidos vs Lentos")
+    st.markdown("Identifica qué combinaciones de Canal de Entrada × Actividad cierran más rápido")
     
     # Filter to closed contacts
     closed = cohort[cohort['is_closed'] == 1].copy()
     
     if len(closed) == 0:
-        st.warning("No closed contacts available for analysis.")
+        st.warning("No hay contactos cerrados disponibles para análisis.")
         return
     
-    st.markdown(f"**Analyzing {len(closed):,} closed contacts**")
+    st.markdown(f"**Analizando {len(closed):,} contactos cerrados**")
     
     # Define fast and slow
     fast_threshold = 60
@@ -1335,22 +1335,22 @@ def render_fast_slow_closers_c3(cohort):
     with col1:
         fast_count = (closed['closure_speed'] == 'Fast (≤60 days)').sum()
         fast_pct = (fast_count / len(closed) * 100)
-        st.metric("Fast Closers", f"{fast_count:,}", delta=f"{fast_pct:.1f}%")
+        st.metric("Cerradores Rápidos", f"{fast_count:,}", delta=f"{fast_pct:.1f}%")
     
     with col2:
         medium_count = (closed['closure_speed'] == 'Medium').sum()
         medium_pct = (medium_count / len(closed) * 100)
-        st.metric("Medium Closers", f"{medium_count:,}", delta=f"{medium_pct:.1f}%")
+        st.metric("Cerradores Medios", f"{medium_count:,}", delta=f"{medium_pct:.1f}%")
     
     with col3:
         slow_count = (closed['closure_speed'] == 'Slow (>180 days)').sum()
         slow_pct = (slow_count / len(closed) * 100)
-        st.metric("Slow Closers", f"{slow_count:,}", delta=f"{slow_pct:.1f}%")
+        st.metric("Cerradores Lentos", f"{slow_count:,}", delta=f"{slow_pct:.1f}%")
     
     st.markdown("---")
     
     # Fast closers by segment
-    st.markdown("#### ⚡ Fast Closers by Entry Channel")
+    st.markdown("#### ⚡ Cerradores Rápidos por Canal de Entrada")
     
     fast_closers = closed[closed['closure_speed'] == 'Fast (≤60 days)']
     
@@ -1359,37 +1359,37 @@ def render_fast_slow_closers_c3(cohort):
         
         # Create DataFrame for proper Plotly plotting
         fast_df = pd.DataFrame({
-            'Entry Channel': fast_by_segment.index,
-            'Count': fast_by_segment.values
+            'Canal de Entrada': fast_by_segment.index,
+            'Conteo': fast_by_segment.values
         })
         
         fig = px.bar(
             fast_df,
-            x='Count',
-            y='Entry Channel',
+            x='Conteo',
+            y='Canal de Entrada',
             orientation='h',
-            title="Fast Closers by Entry Channel"
+            title="Cerradores Rápidos por Canal de Entrada"
         )
         fig.update_traces(marker_color='#2ecc71')
         fig.update_layout(showlegend=False, height=400)
         st.plotly_chart(fig, use_container_width=True)
         
         # Average activities for fast closers
-        st.markdown("**Fast Closers - Activity Patterns:**")
+        st.markdown("**Cerradores Rápidos - Patrones de Actividad:**")
         fast_stats = fast_closers.groupby('segment_c3').agg({
             'apreu_activity_count': 'mean',
             'apreu_activity_diversity': 'mean',
             'engagement_score': 'mean'
         }).round(2)
-        fast_stats.columns = ['Avg Activities', 'Avg Diversity', 'Avg Engagement']
+        fast_stats.columns = ['Actividades Prom', 'Diversidad Prom', 'Compromiso Prom']
         st.dataframe(fast_stats, use_container_width=True)
     else:
-        st.info("No fast closers in this dataset.")
+        st.info("No hay cerradores rápidos en este dataset.")
     
     st.markdown("---")
     
     # Slow closers by segment
-    st.markdown("#### 🐌 Slow Closers by Entry Channel")
+    st.markdown("#### 🐌 Cerradores Lentos por Canal de Entrada")
     
     slow_closers = closed[closed['closure_speed'] == 'Slow (>180 days)']
     
@@ -1398,37 +1398,37 @@ def render_fast_slow_closers_c3(cohort):
         
         # Create DataFrame for proper Plotly plotting
         slow_df = pd.DataFrame({
-            'Entry Channel': slow_by_segment.index,
-            'Count': slow_by_segment.values
+            'Canal de Entrada': slow_by_segment.index,
+            'Conteo': slow_by_segment.values
         })
         
         fig = px.bar(
             slow_df,
-            x='Count',
-            y='Entry Channel',
+            x='Conteo',
+            y='Canal de Entrada',
             orientation='h',
-            title="Slow Closers by Entry Channel"
+            title="Cerradores Lentos por Canal de Entrada"
         )
         fig.update_traces(marker_color='#e74c3c')
         fig.update_layout(showlegend=False, height=400)
         st.plotly_chart(fig, use_container_width=True)
         
         # Average activities for slow closers
-        st.markdown("**Slow Closers - Activity Patterns:**")
+        st.markdown("**Cerradores Lentos - Patrones de Actividad:**")
         slow_stats = slow_closers.groupby('segment_c3').agg({
             'apreu_activity_count': 'mean',
             'apreu_activity_diversity': 'mean',
             'engagement_score': 'mean'
         }).round(2)
-        slow_stats.columns = ['Avg Activities', 'Avg Diversity', 'Avg Engagement']
+        slow_stats.columns = ['Actividades Prom', 'Diversidad Prom', 'Compromiso Prom']
         st.dataframe(slow_stats, use_container_width=True)
     else:
-        st.info("No slow closers in this dataset.")
+        st.info("No hay cerradores lentos en este dataset.")
     
     st.markdown("---")
     
     # Insights
-    st.markdown("#### 💡 Key Insights")
+    st.markdown("#### 💡 Insights Clave")
     
     insights = []
     
@@ -1436,32 +1436,32 @@ def render_fast_slow_closers_c3(cohort):
         # Best performing segment
         best_segment = fast_by_segment.idxmax()
         best_count = fast_by_segment.max()
-        insights.append(f"✅ **Best Fast Closer Entry Channel:** {best_segment} ({best_count} contacts)")
+        insights.append(f"✅ **Mejor Canal de Entrada para Cerradores Rápidos:** {best_segment} ({best_count} contactos)")
         
         # Average activities
         avg_activities = fast_closers['apreu_activity_count'].mean()
-        insights.append(f"📊 **Fast Closers Average Activities:** {avg_activities:.1f}")
+        insights.append(f"📊 **Actividades Promedio de Cerradores Rápidos:** {avg_activities:.1f}")
     
     if len(slow_closers) > 0:
         # Most common slow segment
         worst_segment = slow_by_segment.idxmax()
         worst_count = slow_by_segment.max()
-        insights.append(f"⚠️ **Most Common Slow Closer Channel:** {worst_segment} ({worst_count} contacts)")
+        insights.append(f"⚠️ **Canal Más Común de Cerradores Lentos:** {worst_segment} ({worst_count} contactos)")
         
         # Average activities
         avg_activities = slow_closers['apreu_activity_count'].mean()
-        insights.append(f"📊 **Slow Closers Average Activities:** {avg_activities:.1f}")
+        insights.append(f"📊 **Actividades Promedio de Cerradores Lentos:** {avg_activities:.1f}")
     
     # Overall ratio
     if len(fast_closers) > 0 and len(slow_closers) > 0:
         ratio = len(fast_closers) / len(slow_closers)
-        insights.append(f"⚖️ **Fast/Slow Ratio:** {ratio:.2f}x")
+        insights.append(f"⚖️ **Proporción Rápidos/Lentos:** {ratio:.2f}x")
     
     if insights:
         for insight in insights:
             st.markdown(insight)
     else:
-        st.info("Not enough data for insights")
+        st.info("No hay suficientes datos para insights")
 
 def visualize_apreu_journey(contact_id, cohort):
     """
@@ -1687,8 +1687,8 @@ def visualize_apreu_journey(contact_id, cohort):
 
 def render_academic_period_tab_c3(cohort):
     """Render academic period analysis tab for Cluster 3"""
-    st.markdown("### 📅 Academic Period (Seasonal) Analysis")
-    st.markdown("Understand enrollment cycles and seasonal trends for APREU activities")
+    st.markdown("### 📅 Análisis de Período Académico (Estacional)")
+    st.markdown("Comprende los ciclos de inscripción y tendencias estacionales para actividades APREU")
     
     # Look for academic period fields
     period_fields = [
@@ -1703,16 +1703,16 @@ def render_academic_period_tab_c3(cohort):
             break
     
     if period_col is None:
-        st.warning("📅 Academic period data not available in dataset")
+        st.warning("📅 Datos de período académico no disponibles en el dataset")
         st.info("""
-        **Expected field:** 'Periodo de ingreso' or similar
+        **Campo esperado:** 'Periodo de ingreso' o similar
         
-        **Format:** YYYYMM (e.g., 202408 for August 2024)
+        **Formato:** YYYYMM (ej., 202408 para Agosto 2024)
         
-        This analysis shows:
-        - Seasonal enrollment patterns
-        - APREU activity effectiveness by period
-        - Entry channel performance over time
+        Este análisis muestra:
+        - Patrones de inscripción estacionales
+        - Efectividad de actividades APREU por período
+        - Rendimiento del canal de entrada a lo largo del tiempo
         """)
         return
     
@@ -1721,11 +1721,11 @@ def render_academic_period_tab_c3(cohort):
         """Convert YYYYMM to readable format"""
         try:
             if pd.isna(period_code):
-                return "Unknown"
+                return "Desconocido"
             
             period_str = str(int(period_code)).strip()
             if len(period_str) != 6:
-                return "Unknown"
+                return "Desconocido"
             
             year = period_str[:4]
             period = int(period_str[4:])
@@ -1733,10 +1733,10 @@ def render_academic_period_tab_c3(cohort):
             # Map period codes to semester names (from notebooks)
             # 05 = Special, 10 = Spring, 35 = Summer, 60 = Fall, 75 = Winter/Special
             period_map = {
-                5: "Special",
-                10: "Spring", 
-                35: "Summer",
-                60: "Fall",
+                5: "Especial",
+                10: "Primavera", 
+                35: "Verano",
+                60: "Otoño",
                 75: "Winter/Special"
             }
             
@@ -1744,7 +1744,7 @@ def render_academic_period_tab_c3(cohort):
             
             return f"{year} {semester}"
         except:
-            return "Unknown"
+                return "Desconocido"
     
     # Apply conversion
     cohort_periodo = cohort.copy()
@@ -1754,13 +1754,13 @@ def render_academic_period_tab_c3(cohort):
     cohort_periodo = cohort_periodo[cohort_periodo['periodo_readable'] != 'Unknown']
     
     if len(cohort_periodo) == 0:
-        st.warning("No valid academic period data found")
+        st.warning("No se encontraron datos válidos de período académico")
         return
     
-    st.success(f"📊 Analyzing {len(cohort_periodo):,} contacts with valid admission period data")
+    st.success(f"📊 Analizando {len(cohort_periodo):,} contactos con datos válidos de período de admisión")
     
     # 1. Basic counts by period
-    st.markdown("#### 📊 Contact Volume by Admission Period")
+    st.markdown("#### 📊 Volumen de Contactos por Período de Admisión")
     
     periodo_counts = cohort_periodo['periodo_readable'].value_counts().sort_index()
     
@@ -1769,29 +1769,29 @@ def render_academic_period_tab_c3(cohort):
     with col1:
         # Create DataFrame for proper Plotly plotting
         periodo_df = pd.DataFrame({
-            'Admission Period': periodo_counts.index,
-            'Number of Contacts': periodo_counts.values
+            'Período de Admisión': periodo_counts.index,
+            'Número de Contactos': periodo_counts.values
         })
         
         # Simple bar chart with single color for clarity
         fig = px.bar(
             periodo_df,
-            x='Admission Period',
-            y='Number of Contacts',
-            title="Contacts by Admission Period (Chronological)"
+            x='Período de Admisión',
+            y='Número de Contactos',
+            title="Contactos por Período de Admisión (Cronológico)"
         )
         # Use a single professional color
         fig.update_traces(marker_color='#9b59b6')
         fig.update_layout(
             showlegend=False, 
             xaxis_tickangle=-45,
-            yaxis_title="Number of Contacts",
-            xaxis_title="Admission Period"
+            yaxis_title="Número de Contactos",
+            xaxis_title="Período de Admisión"
         )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.markdown("**Top 5 Largest Periods:**")
+        st.markdown("**Top 5 Períodos Más Grandes:**")
         # Sort by count descending to show actual top periods
         top_5 = periodo_counts.nlargest(5)
         for period, count in top_5.items():
@@ -1799,8 +1799,8 @@ def render_academic_period_tab_c3(cohort):
             # Show percentage as label, not as delta (which implies growth)
             st.metric(
                 label=period, 
-                value=f"{count:,} contacts",
-                help=f"Represents {pct:.1f}% of all contacts in this analysis"
+                value=f"{count:,} contactos",
+                help=f"Representa {pct:.1f}% de todos los contactos en este análisis"
             )
     
     st.markdown("---")
@@ -1822,8 +1822,8 @@ def render_academic_period_tab_c3(cohort):
             fig = px.line(
                 x=periodo_activity.index,
                 y=periodo_activity['num_apreu_activities'],
-                title="Average APREU Activities per Contact by Period",
-                labels={'x': 'Period', 'y': 'Avg Activities'},
+                title="Promedio de Actividades APREU por Contacto por Período",
+                labels={'x': 'Período', 'y': 'Actividades Prom'},
                 markers=True
             )
             fig.update_layout(xaxis_tickangle=-45)
@@ -1849,8 +1849,8 @@ def render_academic_period_tab_c3(cohort):
         fig = px.bar(
             seg_by_period,
             barmode='stack',
-            title="Segment Distribution by Period",
-            labels={'value': '% of Contacts', 'variable': 'Segment'},
+            title="Distribución de Segmentos por Período (3A=Digital, 3B=Eventos, 3C=Mensajería, 3D=Nicho)",
+            labels={'value': '% de Contactos', 'variable': 'Segmento'},
             color_discrete_sequence=px.colors.qualitative.Pastel
         )
         fig.update_layout(xaxis_tickangle=-45)
@@ -1859,7 +1859,7 @@ def render_academic_period_tab_c3(cohort):
     st.markdown("---")
     
     # 4. Entry channel distribution by period
-    st.markdown("#### 🚪 Entry Channel Distribution by Period")
+    st.markdown("#### 🚪 Distribución de Canal de Entrada por Período")
     
     if 'entry_channel' in cohort_periodo.columns:
         # Get top entry channels
@@ -1913,7 +1913,7 @@ def render_academic_period_tab_c3(cohort):
         # Close rate trend
         fig = px.line(
             perf_df, x='Period', y='Close Rate %',
-            title="Close Rate Trend by Admission Period",
+            title="Tendencia de Tasa de Cierre por Período de Admisión",
             markers=True,
             color_discrete_sequence=['#9C27B0']
         )
@@ -1923,7 +1923,7 @@ def render_academic_period_tab_c3(cohort):
     st.markdown("---")
     
     # 6. Lifecycle stages by period
-    st.markdown("#### 🔄 Lifecycle Stage by Period")
+    st.markdown("#### 🔄 Etapa del Ciclo de Vida por Período")
     
     if 'lifecycle_stage' in cohort_periodo.columns:
         # Get top lifecycle stages
@@ -1983,76 +1983,76 @@ def render_contact_lookup_tab_c3(cohort):
     st.markdown("### 🔍 Individual Contact Lookup")
     
     if 'contact_id' not in cohort.columns:
-        st.warning("Contact ID not available in dataset.")
+        st.warning("ID de contacto no disponible en el dataset.")
         return
     
-    contact_id = st.text_input("Enter Contact ID:", placeholder="e.g., 12345")
+    contact_id = st.text_input("Ingresar ID de Contacto:", placeholder="p. ej., 12345")
     
     if contact_id:
         contact_id_str = str(contact_id).strip()
         matches = cohort[cohort['contact_id'].astype(str) == contact_id_str]
         
         if len(matches) == 0:
-            st.error(f"No contact found with ID: {contact_id}")
+            st.error(f"No se encontró contacto con ID: {contact_id}")
         else:
             contact = matches.iloc[0]
             
-            st.markdown("#### Contact Profile")
+            st.markdown("#### Perfil del Contacto")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
-                st.markdown("**Identification**")
-                st.write(f"**Contact ID:** {contact.get('contact_id', 'N/A')}")
-                st.write(f"**Entry Channel:** {contact.get('segment_c3', 'N/A')}")
-                st.write(f"**Action Tag:** {contact.get('action_tag', 'N/A')}")
-                st.write(f"**Preparatoria:** {contact.get('preparatoria', 'Unknown')}")
-                st.write(f"**Prep Year:** {contact.get('prep_year_normalized', 'Unknown')}")
+                st.markdown("**Identificación**")
+                st.write(f"**ID de Contacto:** {contact.get('contact_id', 'N/A')}")
+                st.write(f"**Canal de Entrada:** {contact.get('segment_c3', 'N/A')}")
+                st.write(f"**Etiqueta de Acción:** {contact.get('action_tag', 'N/A')}")
+                st.write(f"**Preparatoria:** {contact.get('preparatoria', 'Desconocido')}")
+                st.write(f"**Año de Prep:** {contact.get('prep_year_normalized', 'Desconocido')}")
             
             with col2:
-                st.markdown("**APREU Activities**")
-                st.write(f"**Total Activities:** {int(contact.get('apreu_activity_count', 0))}")
-                st.write(f"**Activity Diversity:** {int(contact.get('apreu_activity_diversity', 0))}")
-                st.write(f"**First Conversion:** {contact.get('first_conversion', 'None')[:30]}")
-                st.write(f"**Recent Conversion:** {contact.get('recent_conversion', 'None')[:30]}")
+                st.markdown("**Actividades APREU**")
+                st.write(f"**Total de Actividades:** {int(contact.get('apreu_activity_count', 0))}")
+                st.write(f"**Diversidad de Actividades:** {int(contact.get('apreu_activity_diversity', 0))}")
+                st.write(f"**Primera Conversión:** {contact.get('first_conversion', 'Ninguna')[:30]}")
+                st.write(f"**Conversión Reciente:** {contact.get('recent_conversion', 'Ninguna')[:30]}")
                 
                 if pd.notna(contact.get('conversion_journey_days')):
-                    st.write(f"**Journey Duration:** {contact.get('conversion_journey_days', 0):.0f} days")
+                    st.write(f"**Duración del Recorrido:** {contact.get('conversion_journey_days', 0):.0f} días")
             
             with col3:
-                st.markdown("**Engagement & Outcomes**")
-                st.write(f"**Sessions:** {int(contact.get('num_sessions', 0)):,}")
-                st.write(f"**Forms:** {int(contact.get('forms_submitted', 0)):,}")
-                st.write(f"**Engagement Score:** {contact.get('engagement_score', 0):.2f}")
+                st.markdown("**Compromiso y Resultados**")
+                st.write(f"**Sesiones:** {int(contact.get('num_sessions', 0)):,}")
+                st.write(f"**Formularios:** {int(contact.get('forms_submitted', 0)):,}")
+                st.write(f"**Puntuación de Compromiso:** {contact.get('engagement_score', 0):.2f}")
                 
                 if 'likelihood_pct' in contact.index:
-                    st.write(f"**Likelihood:** {contact.get('likelihood_pct', 0):.1f}%")
+                    st.write(f"**Probabilidad:** {contact.get('likelihood_pct', 0):.1f}%")
                 
-                is_closed = "Yes" if contact.get('is_closed', 0) == 1 else "No"
-                st.write(f"**Closed:** {is_closed}")
+                is_closed = "Sí" if contact.get('is_closed', 0) == 1 else "No"
+                st.write(f"**Cerrado:** {is_closed}")
                 
                 if 'lifecycle_stage' in contact.index:
-                    st.write(f"**Lifecycle:** {contact.get('lifecycle_stage', 'N/A')}")
+                    st.write(f"**Ciclo de Vida:** {contact.get('lifecycle_stage', 'N/A')}")
             
             st.markdown("---")
-            st.markdown("#### Activities Attended")
+            st.markdown("#### Actividades a las que Asistió")
             
             activities = contact.get('apreu_activities_list', [])
             if activities:
-                st.markdown(f"**{len(activities)} activities recorded:**")
+                st.markdown(f"**{len(activities)} actividades registradas:**")
                 for i, activity in enumerate(activities, 1):
                     st.write(f"{i}. {activity}")
             else:
-                st.info("No APREU activities recorded for this contact.")
+                st.info("No se registraron actividades APREU para este contacto.")
             
             # Show journey visualization
             st.markdown("---")
-            st.markdown("#### 🗺️ APREU Journey Visualization")
+            st.markdown("#### 🗺️ Visualización del Recorrido APREU")
             
             fig = visualize_apreu_journey(contact_id, cohort)
             if fig:
                 st.pyplot(fig)
                 plt.close(fig)
             else:
-                st.info("📊 No journey data available for visualization")
+                st.info("📊 No hay datos de recorrido disponibles para visualización")
 
