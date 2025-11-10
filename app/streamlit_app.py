@@ -577,10 +577,10 @@ def render_overview(data):
         - ✅ Análisis de período académico con tendencias estacionales
         
         **Segmentos:**
-        - **3A. Digital-primero**: Sitio web, formularios, entradas en línea → secuencias automatizadas
-        - **3B. Evento-primero**: Open Day, Fogatada, eventos en vivo → seguimiento 48h
-        - **3C. Mensajería-primero**: WhatsApp, contacto directo → respuesta personalizada y rápida
-        - **3D. Nicho/Bajo-volumen**: Programas especializados, campañas pequeñas → evaluación de ROI
+        - **3A. Canal Digital**: Sitio web, formularios, entradas en línea → secuencias automatizadas
+        - **3B. Canal Eventos**: Open Day, Fogatada, eventos en vivo → seguimiento 48h
+        - **3C. Canal Mensajería**: WhatsApp, contacto directo → respuesta personalizada y rápida
+        - **3D. Canal Nicho**: Programas especializados, campañas pequeñas → evaluación de ROI
         
         **Pestañas Disponibles:** Resumen, Análisis de Segmento, Análisis de Actividad, Análisis de Preparatoria, Email y Conversión, Cerradores Rápidos/Lentos, Período Académico, Búsqueda de Contactos
         """)

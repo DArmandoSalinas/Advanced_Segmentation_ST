@@ -236,10 +236,10 @@ def process_cluster3_data(_data, cache_key=None):
     
     # Create segment labels with descriptive names
     segment_descriptions = {
-        '3A_Digital': '3A - Digital Primero (Sitio Web, Formularios)',
-        '3B_Event': '3B - Eventos Primero (Open Day, Fogatada, TDLA)',
-        '3C_Messaging': '3C - Mensajería Primero (WhatsApp, DM)',
-        '3D_Niche': '3D - Nicho/Bajo Volumen (Programas Especiales)',
+        '3A_Digital': '3A - Canal Digital (Sitio Web, Formularios)',
+        '3B_Event': '3B - Canal Eventos (Open Day, Fogatada, TDLA)',
+        '3C_Messaging': '3C - Canal Mensajería (WhatsApp, DM)',
+        '3D_Niche': '3D - Canal Nicho (Programas Especiales)',
         'Unknown': 'Desconocido'
     }
     
@@ -474,13 +474,13 @@ def render_cluster3(data):
         - ¿Cuántas actividades atiende el convertidor promedio?
         
         ### 📊 Segmentos Definidos
-        - **3A (Digital-Primero)** - Sitio web, formularios, entradas en línea → Secuencias de nutrición automatizadas
-        - **3B (Evento-Primero)** - Open Day, Fogatada, eventos presenciales → Seguimiento de 48 horas
-        - **3C (Mensajería-Primero)** - WhatsApp, contacto directo → Respuesta personalizada y rápida
-        - **3D (Nicho/Bajo-Volumen)** - Programas especializados, campañas pequeñas → Evaluación de ROI
+        - **3A (Canal Digital)** - Sitio web, formularios, entradas en línea → Secuencias de nutrición automatizadas
+        - **3B (Canal Eventos)** - Open Day, Fogatada, eventos presenciales → Seguimiento de 48 horas
+        - **3C (Canal Mensajería)** - WhatsApp, contacto directo → Respuesta personalizada y rápida
+        - **3D (Canal Nicho)** - Programas especializados, campañas pequeñas → Evaluación de ROI
         
         ### 💡 Ejemplo de Insight
-        *"Los contactos 3B (Evento-Primero) que asisten a Fogatada tienen una tasa de cierre del 42% vs 18% para solo digital"*
+        *"Los contactos 3B (Canal Eventos) que asisten a Fogatada tienen una tasa de cierre del 42% vs 18% para solo digital"*
         → **Acción:** Invertir más en Fogatada, priorizar seguimiento de eventos dentro de 48 horas
         
         ### 🎪 Viaje de Actividad
@@ -648,7 +648,7 @@ def render_overview_tab_c3(cohort):
         fig = px.pie(
             values=seg_counts.values,
             names=seg_counts.index,
-            title="Distribución de Canal de Entrada - Leyenda: 3A=Digital Primero, 3B=Eventos Primero, 3C=Mensajería Primero, 3D=Nicho/Bajo Volumen",
+            title="Distribución de Canal de Entrada - Leyenda: 3A=Canal Digital, 3B=Canal Eventos, 3C=Canal Mensajería, 3D=Canal Nicho",
             hole=0.4,
             color_discrete_sequence=px.colors.qualitative.Set3
         )
@@ -748,10 +748,10 @@ def render_segment_analysis_tab_c3(cohort):
     
     # Segment description
     descriptions = {
-        '3A - Digital Primero (Sitio Web, Formularios)': "Contactos que entran a través del sitio web, formularios y canales en línea. Mejor adecuados para secuencias de nutrición automatizadas.",
-        '3B - Eventos Primero (Open Day, Fogatada, TDLA)': "Contactos de eventos presenciales y virtuales (Open Day, Fogatada, TDLA). Requieren seguimiento inmediato post-evento.",
-        '3C - Mensajería Primero (WhatsApp, DM)': "Contactos vía WhatsApp y mensajería directa. Esperan respuestas personalizadas y rápidas.",
-        '3D - Nicho/Bajo Volumen (Programas Especiales)': "Contactos de programas especiales y campañas pequeñas. Evaluar ROI y considerar escalamiento."
+        '3A - Canal Digital (Sitio Web, Formularios)': "Contactos que entran principalmente a través del sitio web, formularios y canales en línea. Mejor adecuados para secuencias de nutrición automatizadas.",
+        '3B - Canal Eventos (Open Day, Fogatada, TDLA)': "Contactos que participan principalmente en eventos presenciales y virtuales (Open Day, Fogatada, TDLA). Requieren seguimiento inmediato post-evento.",
+        '3C - Canal Mensajería (WhatsApp, DM)': "Contactos que interactúan principalmente vía WhatsApp y mensajería directa. Esperan respuestas personalizadas y rápidas.",
+        '3D - Canal Nicho (Programas Especiales)': "Contactos de programas especiales y campañas pequeñas. Evaluar ROI y considerar escalamiento."
     }
     
     if selected_segment in descriptions:
@@ -1011,6 +1011,214 @@ def render_preparatoria_analysis_tab(cohort):
     prepa_performance = prepa_performance.sort_values('Close Rate %', ascending=False)
     
     st.dataframe(prepa_performance, use_container_width=True, height=400)
+    
+    st.markdown("---")
+    
+    # Tasa de Conversión por Preparatoria (Enhanced)
+    st.markdown("#### 📊 Tasas de Conversión por Preparatoria")
+    st.markdown("Análisis detallado de tasas de conversión y rendimiento por preparatoria")
+    
+    # Calculate conversion rate by preparatoria
+    prepa_conversion = top_prepa_data.groupby('preparatoria').agg({
+        'contact_id': 'count',
+        'is_closed': 'sum',
+        'close_date': lambda x: x.notna().sum()
+    })
+    prepa_conversion.columns = ['Total Contactos', 'Cerrados', 'Conversiones']
+    prepa_conversion['Tasa de Conversión %'] = (
+        prepa_conversion['Conversiones'] / prepa_conversion['Total Contactos'] * 100
+    ).round(1)
+    
+    # Add additional metrics
+    prepa_conversion_enhanced = top_prepa_data.groupby('preparatoria').agg({
+        'contact_id': 'count',
+        'is_closed': 'sum',
+        'days_to_close': lambda x: x.dropna().mean() if x.dropna().any() else None,
+        'engagement_score': 'mean',
+        'apreu_activity_count': 'mean'
+    }).round(2)
+    prepa_conversion_enhanced.columns = ['Total', 'Cerrados', 'Días Prom hasta Cierre', 'Compromiso Prom', 'Actividades Prom']
+    prepa_conversion_enhanced['Tasa de Conversión %'] = (
+        prepa_conversion_enhanced['Cerrados'] / prepa_conversion_enhanced['Total'] * 100
+    ).round(1)
+    prepa_conversion_enhanced = prepa_conversion_enhanced.sort_values('Tasa de Conversión %', ascending=False)
+    
+    st.dataframe(prepa_conversion_enhanced, use_container_width=True)
+    
+    # Visualization of conversion rates
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        fig = px.bar(
+            x=prepa_conversion_enhanced.index,
+            y=prepa_conversion_enhanced['Tasa de Conversión %'],
+            title="Tasa de Conversión por Preparatoria",
+            labels={'x': 'Preparatoria', 'y': 'Tasa de Conversión %'},
+            color=prepa_conversion_enhanced['Tasa de Conversión %'],
+            color_continuous_scale='RdYlGn'
+        )
+        fig.update_layout(xaxis_tickangle=-45, height=400)
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        if prepa_conversion_enhanced['Días Prom hasta Cierre'].notna().any():
+            prepa_ttc = prepa_conversion_enhanced[prepa_conversion_enhanced['Días Prom hasta Cierre'].notna()].copy()
+            prepa_ttc = prepa_ttc.sort_values('Días Prom hasta Cierre', ascending=True)
+            fig = px.bar(
+                x=prepa_ttc.index,
+                y=prepa_ttc['Días Prom hasta Cierre'],
+                title="Días Promedio hasta Cierre por Preparatoria",
+                labels={'x': 'Preparatoria', 'y': 'Días Promedio'},
+                color=prepa_ttc['Días Prom hasta Cierre'],
+                color_continuous_scale='Reds'
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # Tiempos Promedios de Cierre por Canal
+    st.markdown("#### ⏱️ Tiempos Promedios de Cierre por Canal")
+    st.markdown("Análisis de cuánto tiempo tardan en cerrar los contactos según su canal de entrada")
+    
+    # Filter to closed contacts only
+    closed_cohort = with_prepa[with_prepa['close_date'].notna() & (with_prepa['days_to_close'].notna())].copy()
+    analyzed_channels = closed_cohort[closed_cohort['segment_c3'] != 'Desconocido']
+    
+    if len(analyzed_channels) > 0:
+        # Calculate time to close by channel
+        channel_ttc = analyzed_channels.groupby('segment_c3').agg({
+            'contact_id': 'count',
+            'days_to_close': ['mean', 'median', 'std', 'min', 'max']
+        }).round(1)
+        
+        # Flatten column names
+        channel_ttc.columns = ['Total Cerrados', 'Días Promedio', 'Días Mediana', 'Desviación Estándar', 'Mínimo', 'Máximo']
+        
+        st.markdown("**Métricas de Tiempo hasta Cierre por Canal:**")
+        st.dataframe(channel_ttc, use_container_width=True)
+        
+        # Visualizations
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            fig = px.bar(
+                x=channel_ttc.index,
+                y=channel_ttc['Días Promedio'],
+                title="Días Promedio hasta Cierre por Canal",
+                labels={'x': 'Canal de Entrada', 'y': 'Días Promedio'},
+                color=channel_ttc['Días Promedio'],
+                color_continuous_scale='Reds'
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            fig = px.bar(
+                x=channel_ttc.index,
+                y=channel_ttc['Días Mediana'],
+                title="Días Mediana hasta Cierre por Canal",
+                labels={'x': 'Canal de Entrada', 'y': 'Días Mediana'},
+                color=channel_ttc['Días Mediana'],
+                color_continuous_scale='Oranges'
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Box plot for distribution
+        st.markdown("**Distribución de Tiempo hasta Cierre por Canal:**")
+        fig = px.box(
+            analyzed_channels,
+            x='segment_c3',
+            y='days_to_close',
+            title="Distribución de Días hasta Cierre por Canal de Entrada",
+            labels={'segment_c3': 'Canal de Entrada', 'days_to_close': 'Días hasta Cierre'},
+            color='segment_c3'
+        )
+        fig.update_layout(xaxis_tickangle=-45, height=400)
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No hay suficientes contactos cerrados para analizar tiempos de cierre por canal.")
+    
+    st.markdown("---")
+    
+    # Canal Predominante por Preparatoria
+    st.markdown("#### 🎯 Canal Predominante por Preparatoria")
+    st.markdown("Identifica qué canal de entrada es más común para cada preparatoria")
+    
+    analyzed_prepa = top_prepa_data[top_prepa_data['segment_c3'] != 'Desconocido']
+    
+    if len(analyzed_prepa) > 0:
+        # Calculate predominant channel for each preparatoria
+        prepa_channel_dominance = []
+        
+        for prepa in top_prepa_list[:20]:
+            prepa_contacts = analyzed_prepa[analyzed_prepa['preparatoria'] == prepa]
+            
+            if len(prepa_contacts) > 0:
+                # Count channels for this preparatoria
+                channel_counts = prepa_contacts['segment_c3'].value_counts()
+                total_contacts = len(prepa_contacts)
+                
+                # Get predominant channel (most common)
+                predominant_channel = channel_counts.index[0] if len(channel_counts) > 0 else 'Desconocido'
+                predominant_count = channel_counts.iloc[0] if len(channel_counts) > 0 else 0
+                predominant_pct = (predominant_count / total_contacts * 100) if total_contacts > 0 else 0
+                
+                # Get all channel percentages
+                channel_pcts = {}
+                for channel in analyzed_prepa['segment_c3'].unique():
+                    channel_count = (prepa_contacts['segment_c3'] == channel).sum()
+                    channel_pcts[channel] = (channel_count / total_contacts * 100) if total_contacts > 0 else 0
+                
+                prepa_channel_dominance.append({
+                    'Preparatoria': prepa,
+                    'Total Contactos': total_contacts,
+                    'Canal Predominante': predominant_channel,
+                    '% Canal Predominante': round(predominant_pct, 1),
+                    'Conteo Canal Predominante': predominant_count
+                })
+                
+                # Add percentages for each channel
+                for channel, pct in channel_pcts.items():
+                    prepa_channel_dominance[-1][f'% {channel}'] = round(pct, 1)
+        
+        if prepa_channel_dominance:
+            prepa_channel_df = pd.DataFrame(prepa_channel_dominance)
+            prepa_channel_df = prepa_channel_df.sort_values('Total Contactos', ascending=False)
+            
+            # Display table
+            st.markdown("**Tabla de Canal Predominante por Preparatoria:**")
+            st.dataframe(prepa_channel_df, use_container_width=True)
+            
+            # Visualization - predominant channel distribution
+            st.markdown("**Distribución de Canales Predominantes:**")
+            predominant_counts = prepa_channel_df['Canal Predominante'].value_counts()
+            
+            fig = px.pie(
+                values=predominant_counts.values,
+                names=predominant_counts.index,
+                title="Distribución de Canales Predominantes (Top 20 Preparatorias)",
+                hole=0.4
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Bar chart showing predominant channel for each preparatoria
+            st.markdown("**Canal Predominante por Preparatoria (Top 15):**")
+            prepa_channel_top15 = prepa_channel_df.head(15)
+            
+            fig = px.bar(
+                x=prepa_channel_top15['Preparatoria'],
+                y=prepa_channel_top15['% Canal Predominante'],
+                color=prepa_channel_top15['Canal Predominante'],
+                title="Porcentaje del Canal Predominante por Preparatoria",
+                labels={'x': 'Preparatoria', 'y': '% del Canal Predominante'},
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=500)
+            st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No hay suficientes datos de canal para analizar predominancia por preparatoria.")
     
     st.markdown("---")
     
@@ -1849,7 +2057,7 @@ def render_academic_period_tab_c3(cohort):
         fig = px.bar(
             seg_by_period,
             barmode='stack',
-            title="Distribución de Segmentos por Período (3A=Digital, 3B=Eventos, 3C=Mensajería, 3D=Nicho)",
+            title="Distribución de Segmentos por Período (3A=Canal Digital, 3B=Canal Eventos, 3C=Canal Mensajería, 3D=Canal Nicho)",
             labels={'value': '% de Contactos', 'variable': 'Segmento'},
             color_discrete_sequence=px.colors.qualitative.Pastel
         )

@@ -159,6 +159,28 @@ def process_cluster2_data(_data, geo_config=None, cache_key=None):
                      for col in ['prep_country_bpm', 'ip_country']]
     df['country_any'] = coalesce_non_unknown(country_series)
     
+    # Normalize United States variations to a single format
+    def normalize_united_states(country):
+        if pd.isna(country) or country == "unknown" or country == "":
+            return country
+        country_lower = str(country).lower().strip()
+        # Normalize variations of United States
+        us_variations = [
+            "estados unidos de america",
+            "estados unidos de américa", 
+            "united states of america",
+            "united states",
+            "usa",
+            "us",
+            "u.s.a.",
+            "u.s."
+        ]
+        if country_lower in us_variations:
+            return "estados unidos"
+        return country
+    
+    df['country_any'] = df['country_any'].apply(normalize_united_states)
+    
     state_series = [df.get(col, pd.Series("unknown", index=df.index)) 
                    for col in ['prep_state_bpm', 'estado_de_procedencia', 'ip_state_region']]
     df['state_any'] = coalesce_non_unknown(state_series)
@@ -857,6 +879,91 @@ def render_geography_analysis_tab(cohort):
     
     st.markdown("---")
     
+    # Country Performance Analysis
+    st.markdown("#### 🌍 Rendimiento por País")
+    st.markdown("Análisis completo de rendimiento de los principales países")
+    
+    # Filter out unknown countries
+    country_data = cohort[cohort['country_any'] != 'unknown'].copy()
+    
+    if len(country_data) > 0:
+        # Get top countries by volume
+        top_countries = country_data['country_any'].value_counts().head(15).index
+        
+        # Calculate comprehensive performance metrics by country
+        country_performance = country_data[country_data['country_any'].isin(top_countries)].groupby('country_any').agg({
+            'contact_id': 'count',
+            'num_sessions': 'mean',
+            'num_pageviews': 'mean',
+            'forms_submitted': 'mean',
+            'engagement_score': 'mean',
+            'close_date': lambda x: x.notna().sum(),
+            'days_to_close': lambda x: x.dropna().mean() if x.dropna().any() else None
+        }).round(2)
+        
+        country_performance.columns = ['Total', 'Sesiones Prom', 'Páginas Prom', 'Formularios Prom', 
+                                      'Compromiso Prom', 'Cerrados', 'Días Prom hasta Cierre']
+        country_performance['Tasa de Cierre %'] = (
+            country_performance['Cerrados'] / country_performance['Total'] * 100
+        ).round(1)
+        
+        # Sort by total contacts
+        country_performance = country_performance.sort_values('Total', ascending=False)
+        
+        # Display table
+        st.markdown("**Métricas de Rendimiento por País (Top 15 por Volumen):**")
+        st.dataframe(country_performance, use_container_width=True)
+        
+        # Visualizations
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # Close rate by country
+            fig = px.bar(
+                x=country_performance.index,
+                y=country_performance['Tasa de Cierre %'],
+                title="Tasa de Cierre por País",
+                labels={'x': 'País', 'y': 'Tasa de Cierre %'},
+                color=country_performance['Tasa de Cierre %'],
+                color_continuous_scale='RdYlGn'
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            # Engagement score by country
+            fig = px.bar(
+                x=country_performance.index,
+                y=country_performance['Compromiso Prom'],
+                title="Compromiso Promedio por País",
+                labels={'x': 'País', 'y': 'Compromiso Promedio'},
+                color=country_performance['Compromiso Prom'],
+                color_continuous_scale='Blues'
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Days to close by country (if available)
+        if country_performance['Días Prom hasta Cierre'].notna().any():
+            st.markdown("**Tiempo hasta Cierre por País:**")
+            country_ttc = country_performance[country_performance['Días Prom hasta Cierre'].notna()].copy()
+            country_ttc = country_ttc.sort_values('Días Prom hasta Cierre', ascending=True)
+            
+            fig = px.bar(
+                x=country_ttc.index,
+                y=country_ttc['Días Prom hasta Cierre'],
+                title="Días Promedio hasta Cierre por País",
+                labels={'x': 'País', 'y': 'Días Promedio'},
+                color=country_ttc['Días Prom hasta Cierre'],
+                color_continuous_scale='Reds'
+            )
+            fig.update_layout(xaxis_tickangle=-45, height=400)
+            st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("No hay datos de países disponibles para análisis.")
+    
+    st.markdown("---")
+    
     # Top Mexican states (for domestic/foráneo contacts)
     st.markdown("#### Principales Estados Mexicanos (Contactos Nacionales: Local + Foráneo)")
     domestic = cohort[cohort['geo_tier'].isin(['local', 'domestic_non_local'])]
@@ -877,23 +984,120 @@ def render_geography_analysis_tab(cohort):
         fig.update_layout(showlegend=False, height=500)
         st.plotly_chart(fig, use_container_width=True)
         
-        # State performance metrics
-        st.markdown("#### Rendimiento por Estado (Top 10 por Volumen)")
+        st.markdown("---")
         
-        state_performance = domestic.groupby('state_any').agg({
-            'contact_id': 'count',
-            'engagement_score': 'mean',
-            'close_date': lambda x: x.notna().sum()
-        })
-        state_performance.columns = ['Total', 'Compromiso Prom', 'Cerrados']
-        state_performance['Tasa de Cierre %'] = (
-            state_performance['Cerrados'] / state_performance['Total'] * 100
-        ).round(1)
+        # State Performance Analysis
+        st.markdown("#### 📊 Rendimiento por Estado")
+        st.markdown("Análisis completo de rendimiento de los principales estados")
         
-        state_performance = state_performance[state_performance.index != 'unknown']
-        state_performance = state_performance.sort_values('Total', ascending=False).head(10)
+        # Filter out unknown states
+        state_data = domestic[domestic['state_any'] != 'unknown'].copy()
         
-        st.dataframe(state_performance, use_container_width=True)
+        if len(state_data) > 0:
+            # Get top states by volume
+            top_states = state_data['state_any'].value_counts().head(15).index
+            
+            # Calculate comprehensive performance metrics by state
+            state_performance = state_data[state_data['state_any'].isin(top_states)].groupby('state_any').agg({
+                'contact_id': 'count',
+                'num_sessions': 'mean',
+                'num_pageviews': 'mean',
+                'forms_submitted': 'mean',
+                'engagement_score': 'mean',
+                'close_date': lambda x: x.notna().sum(),
+                'days_to_close': lambda x: x.dropna().mean() if x.dropna().any() else None
+            }).round(2)
+            
+            state_performance.columns = ['Total', 'Sesiones Prom', 'Páginas Prom', 'Formularios Prom', 
+                                       'Compromiso Prom', 'Cerrados', 'Días Prom hasta Cierre']
+            state_performance['Tasa de Cierre %'] = (
+                state_performance['Cerrados'] / state_performance['Total'] * 100
+            ).round(1)
+            
+            # Sort by total contacts
+            state_performance = state_performance.sort_values('Total', ascending=False)
+            
+            # Display table
+            st.markdown("**Métricas de Rendimiento por Estado (Top 15 por Volumen):**")
+            st.dataframe(state_performance, use_container_width=True)
+            
+            # Visualizations
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Close rate by state
+                fig = px.bar(
+                    x=state_performance.index,
+                    y=state_performance['Tasa de Cierre %'],
+                    title="Tasa de Cierre por Estado",
+                    labels={'x': 'Estado', 'y': 'Tasa de Cierre %'},
+                    color=state_performance['Tasa de Cierre %'],
+                    color_continuous_scale='RdYlGn'
+                )
+                fig.update_layout(xaxis_tickangle=-45, height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Engagement score by state
+                fig = px.bar(
+                    x=state_performance.index,
+                    y=state_performance['Compromiso Prom'],
+                    title="Compromiso Promedio por Estado",
+                    labels={'x': 'Estado', 'y': 'Compromiso Promedio'},
+                    color=state_performance['Compromiso Prom'],
+                    color_continuous_scale='Blues'
+                )
+                fig.update_layout(xaxis_tickangle=-45, height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            # Days to close by state (if available)
+            if state_performance['Días Prom hasta Cierre'].notna().any():
+                st.markdown("**Tiempo hasta Cierre por Estado:**")
+                state_ttc = state_performance[state_performance['Días Prom hasta Cierre'].notna()].copy()
+                state_ttc = state_ttc.sort_values('Días Prom hasta Cierre', ascending=True)
+                
+                fig = px.bar(
+                    x=state_ttc.index,
+                    y=state_ttc['Días Prom hasta Cierre'],
+                    title="Días Promedio hasta Cierre por Estado",
+                    labels={'x': 'Estado', 'y': 'Días Promedio'},
+                    color=state_ttc['Días Prom hasta Cierre'],
+                    color_continuous_scale='Reds'
+                )
+                fig.update_layout(xaxis_tickangle=-45, height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            # Additional metrics visualization
+            st.markdown("**Comparación de Métricas Clave por Estado:**")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Sessions per state
+                fig = px.bar(
+                    x=state_performance.index,
+                    y=state_performance['Sesiones Prom'],
+                    title="Sesiones Promedio por Estado",
+                    labels={'x': 'Estado', 'y': 'Sesiones Promedio'},
+                    color=state_performance['Sesiones Prom'],
+                    color_continuous_scale='Purples'
+                )
+                fig.update_layout(xaxis_tickangle=-45, height=400)
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with col2:
+                # Forms submitted per state
+                fig = px.bar(
+                    x=state_performance.index,
+                    y=state_performance['Formularios Prom'],
+                    title="Formularios Promedio por Estado",
+                    labels={'x': 'Estado', 'y': 'Formularios Promedio'},
+                    color=state_performance['Formularios Prom'],
+                    color_continuous_scale='Oranges'
+                )
+                fig.update_layout(xaxis_tickangle=-45, height=400)
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No hay datos de estados disponibles para análisis.")
     else:
         st.info("No hay contactos nacionales para analizar.")
 
@@ -946,6 +1150,81 @@ def render_outcomes_tab_c2(cohort):
         st.markdown("---")
     else:
         st.info("Datos de etapa del ciclo de vida no disponibles")
+    
+    # Traffic Sources Analysis (matching notebook)
+    st.markdown("#### 📊 Análisis de Fuentes de Tráfico por Segmento")
+    st.markdown("Distribución de fuentes por donde los contactos llegan a cada segmento")
+    
+    if 'latest_source' in cohort.columns:
+        # Calculate latest source percentage by segment (matching notebook logic)
+        src_pct_list = []
+        for seg, grp in cohort.groupby("segment_c2"):
+            vc = grp['latest_source'].fillna("unknown").astype(str).str.strip().replace({"": "unknown"}).value_counts(normalize=True)
+            df = vc.mul(100).round(1).to_frame(name="percent").reset_index().rename(columns={"index": "latest_source"})
+            df.insert(0, "segment", seg)
+            src_pct_list.append(df)
+        
+        if src_pct_list:
+            latest_source_pct = pd.concat(src_pct_list, ignore_index=True)
+            
+            # Display table
+            st.markdown("**Porcentaje de Fuentes por Segmento:**")
+            st.dataframe(latest_source_pct, use_container_width=True)
+            
+            # Create visualization - stacked bar chart
+            st.markdown("**Visualización de Fuentes por Segmento:**")
+            
+            # Get top sources across all segments
+            top_sources = latest_source_pct.groupby('latest_source')['percent'].sum().sort_values(ascending=False).head(10).index
+            latest_source_pct_filtered = latest_source_pct[latest_source_pct['latest_source'].isin(top_sources)]
+            
+            # Create stacked bar chart using long format
+            fig = px.bar(
+                latest_source_pct_filtered,
+                x='segment',
+                y='percent',
+                color='latest_source',
+                barmode='stack',
+                title="Distribución de Fuentes de Tráfico por Segmento (%)",
+                labels={'percent': 'Porcentaje (%)', 'segment': 'Segmento', 'latest_source': 'Fuente de Tráfico'},
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            fig.update_layout(height=500, xaxis_title="Segmento", yaxis_title="Porcentaje (%)")
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Create horizontal bar chart for better readability
+            st.markdown("**Top Fuentes por Segmento (Top 5 por segmento):**")
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Show top 5 sources for each segment
+                for seg in sorted(latest_source_pct['segment'].unique()):
+                    seg_data = latest_source_pct[latest_source_pct['segment'] == seg].sort_values('percent', ascending=False).head(5)
+                    st.markdown(f"**{seg}:**")
+                    for _, row in seg_data.iterrows():
+                        st.write(f"  • {row['latest_source']}: {row['percent']:.1f}%")
+            
+            with col2:
+                # Overall source distribution
+                overall_sources = latest_source_pct.groupby('latest_source')['percent'].mean().sort_values(ascending=False).head(10)
+                st.markdown("**Top Fuentes Promedio (todos los segmentos):**")
+                fig = px.bar(
+                    x=overall_sources.values,
+                    y=overall_sources.index,
+                    orientation='h',
+                    title="Top 10 Fuentes Promedio",
+                    labels={'x': 'Porcentaje Promedio (%)', 'y': 'Fuente'},
+                    color=overall_sources.values,
+                    color_continuous_scale='Blues'
+                )
+                fig.update_layout(showlegend=False, height=400)
+                st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("No hay datos de fuentes de tráfico disponibles")
+    else:
+        st.info("Columna 'latest_source' no disponible en el dataset")
+    
+    st.markdown("---")
     
     # Close rates by segment
     st.markdown("#### Comparación de Tasa de Cierre")
