@@ -1,19 +1,14 @@
 [server]
-port = 8501
-headless = true
+# Increase max upload size to 500MB (default is 200MB)
+maxUploadSize = 500
+
+# Increase max message size
+maxMessageSize = 500
+
+# Enable CORS (needed for Cloud Run)
 enableCORS = false
 enableXsrfProtection = false
-maxUploadSize = 200
-
-[browser]
-gatherUsageStats = false
 
 [runner]
-fastReruns = true
-enforceSerializableSessionState = false
-
-[theme]
-primaryColor = "#ff6b6b"
-backgroundColor = "#0e1117"
-secondaryBackgroundColor = "#262730"
-textColor = "#fafafa"
+# Increase memory limit for file processing
+magicEnabled = true

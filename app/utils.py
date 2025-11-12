@@ -9,11 +9,62 @@ import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
 import unicodedata
+import os
+from io import BytesIO
+
+# Try to import Google Cloud Storage (optional, for Cloud Storage support)
+try:
+    from google.cloud import storage
+    GCS_AVAILABLE = True
+except ImportError:
+    GCS_AVAILABLE = False
+
+def upload_to_gcs(uploaded_file, bucket_name, blob_name):
+    """Upload file to Google Cloud Storage"""
+    if not GCS_AVAILABLE:
+        raise ImportError("google-cloud-storage no está instalado. Instálalo con: pip install google-cloud-storage")
+    
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        
+        # Upload file
+        uploaded_file.seek(0)  # Reset file pointer
+        blob.upload_from_file(uploaded_file, content_type='text/csv')
+        
+        return True
+    except Exception as e:
+        raise Exception(f"Error subiendo a Cloud Storage: {e}")
 
 @st.cache_data
-def load_data(uploaded_file=None):
-    """Load the main contacts dataset from uploaded file or default file"""
-    if uploaded_file is not None:
+def load_data_from_gcs(bucket_name, blob_name):
+    """Load data from Google Cloud Storage"""
+    if not GCS_AVAILABLE:
+        raise ImportError("google-cloud-storage no está instalado. Instálalo con: pip install google-cloud-storage")
+    
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+        
+        # Download to memory
+        file_bytes = blob.download_as_bytes()
+        
+        # Read CSV from bytes
+        df = pd.read_csv(BytesIO(file_bytes), low_memory=True, dtype_backend='pyarrow')
+        return df
+    except Exception as e:
+        raise Exception(f"Error cargando desde Cloud Storage: {e}")
+
+@st.cache_data
+def load_data(uploaded_file=None, gcs_bucket=None, gcs_path=None):
+    """Load the main contacts dataset from uploaded file, Cloud Storage, or default file"""
+    # Priority: GCS > uploaded file > default file
+    if gcs_bucket and gcs_path:
+        # Load from Cloud Storage
+        df = load_data_from_gcs(gcs_bucket, gcs_path)
+    elif uploaded_file is not None:
         # Load from uploaded file with memory optimization
         df = pd.read_csv(uploaded_file, low_memory=True, dtype_backend='pyarrow')
     else:

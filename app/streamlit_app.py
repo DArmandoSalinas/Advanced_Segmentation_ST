@@ -9,6 +9,8 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from pathlib import Path
+import os
+from datetime import datetime
 
 # Page configuration
 st.set_page_config(
@@ -92,64 +94,342 @@ def main():
         # File upload option
         data_source = st.radio(
             "Elegir fuente de datos:",
-            ["📂 Usar Archivo Predeterminado", "⬆️ Subir CSV"],
+            ["📂 Usar Archivo Predeterminado", "⬆️ Subir CSV", "☁️ Cargar desde Cloud Storage"],
             index=0
         )
         
         uploaded_file = None
-        data = None
         
-        if data_source == "⬆️ Subir CSV":
+        # Initialize session state for data persistence
+        if 'loaded_data' not in st.session_state:
+            st.session_state.loaded_data = None
+        if 'data_source_info' not in st.session_state:
+            st.session_state.data_source_info = None
+        
+        # Use cached data if available
+        data = st.session_state.loaded_data
+        gcs_bucket = None
+        gcs_path = None
+        
+        if data_source == "☁️ Cargar desde Cloud Storage":
+            st.markdown("**Cargar desde Google Cloud Storage:**")
+            st.info("💡 **Para archivos grandes (>32MB):** Usa el bucket compartido del proyecto. Solo necesitas especificar la ruta de tu archivo.")
+            
+            # Get default bucket from environment or use project default
+            PROJECT_BUCKET = os.getenv("GCS_BUCKET_NAME", "data_clusters")
+            
+            # Show current loaded data info if available
+            if st.session_state.loaded_data is not None and st.session_state.data_source_info:
+                source_info = st.session_state.data_source_info.get('source', 'Datos cargados')
+                st.success(f"✅ **Datos ya cargados:** {source_info} ({len(st.session_state.loaded_data):,} contactos)")
+                if st.button("🔄 Recargar desde Cloud Storage"):
+                    st.session_state.loaded_data = None
+                    st.session_state.data_source_info = None
+                    st.rerun()
+                st.markdown("---")
+            
+            st.markdown(f"**📦 Bucket del proyecto:** `{PROJECT_BUCKET}` (pre-configurado)")
+            st.caption("💡 Todos los archivos se guardan en este bucket compartido del proyecto")
+            
+            gcs_bucket = PROJECT_BUCKET  # Use project bucket automatically
+            
+            gcs_path = st.text_input(
+                "📁 Ruta del archivo en el bucket",
+                value=st.session_state.data_source_info.get('path', '') if st.session_state.data_source_info else "",
+                help="Ejemplo: contacts_campus_Qro_.csv o uploads/20241112_095136_archivo.csv. La ruta es el nombre que aparece en la columna 'Name' de Cloud Storage."
+            )
+            
+            if st.button("🔄 Cargar desde Cloud Storage", type="primary"):
+                if not gcs_path:
+                    st.error("❌ Por favor ingresa la ruta del archivo en el bucket")
+                else:
+                    try:
+                        with st.spinner("📥 Cargando archivo desde Cloud Storage..."):
+                            data = load_data(gcs_bucket=gcs_bucket, gcs_path=gcs_path)
+                            validation = validate_data(data)
+                            
+                            if validation['is_valid']:
+                                # Save to session state for persistence
+                                st.session_state.loaded_data = data
+                                st.session_state.data_source_info = {
+                                    'type': 'gcs',
+                                    'bucket': gcs_bucket,
+                                    'path': gcs_path,
+                                    'source': f"gs://{gcs_bucket}/{gcs_path}"
+                                }
+                                
+                                st.success(f"✅ Cargados {len(data):,} contactos desde Cloud Storage")
+                                st.info("💡 Los datos están guardados y disponibles para todos los clusters. Puedes navegar entre clusters sin recargar.")
+                                
+                                # Show data preview
+                                with st.expander("📋 Vista Previa de Datos"):
+                                    st.write(f"**Fuente:** gs://{gcs_bucket}/{gcs_path}")
+                                    st.write(f"**Columnas:** {len(data.columns)}")
+                                    st.write(f"**Filas:** {len(data):,}")
+                                    st.dataframe(data.head(3), use_container_width=True)
+                                
+                                # Show warnings if any
+                                if validation['warnings']:
+                                    with st.expander("⚠️ Advertencias", expanded=False):
+                                        for warning in validation['warnings']:
+                                            st.warning(warning)
+                                
+                                # Update data variable
+                                data = st.session_state.loaded_data
+                            else:
+                                st.error(f"❌ Datos inválidos: Faltan columnas requeridas: {', '.join(validation['missing_basic'])}")
+                                data = None
+                                st.session_state.loaded_data = None
+                                st.session_state.data_source_info = None
+                    except Exception as e:
+                        st.error(f"❌ Error cargando desde Cloud Storage: {e}")
+                        st.info("""
+                        **Verifica:**
+                        1. El nombre del bucket es correcto
+                        2. La ruta del archivo es correcta
+                        3. El servicio tiene permisos para leer el bucket
+                        4. El archivo existe en Cloud Storage
+                        """)
+                        data = None
+                        st.session_state.loaded_data = None
+                        st.session_state.data_source_info = None
+            
+            with st.expander("📖 ¿Cómo identificar la ruta del archivo?"):
+                st.markdown("""
+                **La ruta es el nombre que aparece en la columna "Name" de Cloud Storage:**
+                
+                - **Si el archivo está en la raíz del bucket:**
+                  - Solo el nombre: `contacts_campus_Qro_.csv`
+                
+                - **Si el archivo está en una carpeta:**
+                  - Incluye la carpeta: `datos/contacts_campus_Qro_.csv`
+                  - O con subcarpetas: `uploads/2024/noviembre/archivo.csv`
+                
+                **Ejemplo práctico:**
+                - Bucket: `data_clusters`
+                - Nombre en la lista: `contacts_campus_Qro_.csv`
+                - **Ruta a usar:** `contacts_campus_Qro_.csv` ✅
+                """)
+            
+            with st.expander("📤 ¿Cómo subir un archivo al bucket del proyecto?"):
+                st.markdown("""
+                Tienes **3 formas** de subir archivos al bucket `data_clusters`:
+                
+                **🌐 Opción 1: Desde la Consola de GCP (Más fácil)**
+                1. Ve a [Cloud Storage](https://console.cloud.google.com/storage/browser/data_clusters)
+                2. Haz clic en el botón **"Upload"** (arriba)
+                3. Selecciona tu archivo CSV desde tu computadora
+                4. Espera a que termine la subida
+                5. **Anota el nombre** que aparece en la lista (esa es la ruta)
+                6. Usa esa ruta en la aplicación
+                
+                **💻 Opción 2: Desde la línea de comandos**
+                ```bash
+                # Subir archivo a la raíz del bucket
+                gsutil cp archivo.csv gs://data_clusters/
+                # Ruta: archivo.csv
+                
+                # Subir archivo a una carpeta
+                gsutil cp archivo.csv gs://data_clusters/datos/
+                # Ruta: datos/archivo.csv
+                ```
+                
+                **📤 Opción 3: Desde esta aplicación (Automático)**
+                - Selecciona **"⬆️ Subir CSV"** arriba
+                - Si el archivo es grande, se sube automáticamente al bucket
+                - No necesitas hacer nada más
+                
+                **💡 Recomendación:** Para archivos grandes, usa la Opción 3 (desde la app) - es la más fácil y automática.
+                """)
+        
+        elif data_source == "⬆️ Subir CSV":
             st.markdown("**Subir Exportación de Contactos de HubSpot:**")
+            
+            # Get default bucket name from environment or use project default
+            PROJECT_BUCKET = os.getenv("GCS_BUCKET_NAME", "data_clusters")
+            
             uploaded_file = st.file_uploader(
                 "Elegir un archivo CSV",
                 type=['csv'],
-                help="Sube tu archivo CSV de exportación de contactos de HubSpot"
+                help="Sube tu archivo CSV. Archivos grandes se subirán automáticamente a Cloud Storage."
             )
             
             if uploaded_file is not None:
-                try:
-                    # Load and validate data
-                    data = load_data(uploaded_file)
-                    validation = validate_data(data)
+                # Check file size (in bytes)
+                file_size_mb = uploaded_file.size / (1024 * 1024)
+                
+                # If file is large, offer to upload to Cloud Storage
+                if file_size_mb > 25:  # Close to the 32MB limit
+                    st.warning(f"⚠️ **Archivo grande detectado ({file_size_mb:.1f}MB)**")
+                    st.info("💡 Este archivo es grande. Te recomendamos subirlo a Cloud Storage para evitar problemas.")
                     
-                    if validation['is_valid']:
-                        st.success(f"✅ Cargados {len(data):,} contactos")
+                    use_gcs = st.checkbox(
+                        "☁️ Subir a Cloud Storage automáticamente",
+                        value=True,
+                        help="El archivo se subirá a Cloud Storage y luego se cargará desde ahí"
+                    )
+                    
+                    if use_gcs:
+                        st.markdown(f"**📦 Bucket del proyecto:** `{PROJECT_BUCKET}` (pre-configurado)")
+                        st.caption("💡 Tu archivo se guardará automáticamente en el bucket compartido del proyecto")
                         
-                        # Show data preview
-                        with st.expander("📋 Vista Previa de Datos"):
-                            st.write(f"**Columnas:** {len(data.columns)}")
-                            st.write(f"**Filas:** {len(data):,}")
-                            st.dataframe(data.head(3), use_container_width=True)
+                        gcs_bucket_upload = PROJECT_BUCKET  # Use project bucket automatically
                         
-                        # Show warnings if any
-                        if validation['warnings']:
-                            with st.expander("⚠️ Advertencias", expanded=False):
-                                for warning in validation['warnings']:
-                                    st.warning(warning)
+                        # Generate a unique filename in uploads folder
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        default_gcs_path = f"uploads/{timestamp}_{uploaded_file.name}"
+                        gcs_path_upload = st.text_input(
+                            "📁 Ruta donde guardar (opcional)",
+                            value=default_gcs_path,
+                            help=f"Se guardará en: gs://{PROJECT_BUCKET}/uploads/ con nombre único. Puedes cambiarlo si quieres."
+                        )
+                        
+                        if st.button("☁️ Subir y Cargar desde Cloud Storage", type="primary"):
+                            try:
+                                with st.spinner("📤 Subiendo archivo a Cloud Storage..."):
+                                    # Upload to Cloud Storage
+                                    from utils import upload_to_gcs
+                                    upload_to_gcs(uploaded_file, gcs_bucket_upload, gcs_path_upload)
+                                    st.success(f"✅ Archivo subido a gs://{gcs_bucket_upload}/{gcs_path_upload}")
+                                
+                                with st.spinner("📥 Cargando datos desde Cloud Storage..."):
+                                    # Load from Cloud Storage
+                                    data = load_data(gcs_bucket=gcs_bucket_upload, gcs_path=gcs_path_upload)
+                                    validation = validate_data(data)
+                                    
+                                    if validation['is_valid']:
+                                        # Save to session state
+                                        st.session_state.loaded_data = data
+                                        st.session_state.data_source_info = {
+                                            'type': 'gcs_upload',
+                                            'bucket': gcs_bucket_upload,
+                                            'path': gcs_path_upload,
+                                            'source': f"gs://{gcs_bucket_upload}/{gcs_path_upload}"
+                                        }
+                                        
+                                        st.success(f"✅ Cargados {len(data):,} contactos")
+                                        st.info("💡 Los datos están guardados y disponibles para todos los clusters.")
+                                        
+                                        # Show data preview
+                                        with st.expander("📋 Vista Previa de Datos"):
+                                            st.write(f"**Fuente:** gs://{gcs_bucket_upload}/{gcs_path_upload}")
+                                            st.write(f"**Columnas:** {len(data.columns)}")
+                                            st.write(f"**Filas:** {len(data):,}")
+                                            st.dataframe(data.head(3), use_container_width=True)
+                                        
+                                        # Show warnings if any
+                                        if validation['warnings']:
+                                            with st.expander("⚠️ Advertencias", expanded=False):
+                                                for warning in validation['warnings']:
+                                                    st.warning(warning)
+                                        
+                                        # Update data variable
+                                        data = st.session_state.loaded_data
+                                    else:
+                                        st.error(f"❌ Datos inválidos: Faltan columnas requeridas: {', '.join(validation['missing_basic'])}")
+                                        data = None
+                                        st.session_state.loaded_data = None
+                                        st.session_state.data_source_info = None
+                            except Exception as e:
+                                st.error(f"❌ Error: {e}")
+                                st.info("""
+                                **Verifica:**
+                                1. El bucket existe y tiene permisos correctos
+                                2. El servicio tiene permisos para escribir en el bucket
+                                3. Ejecuta: `./configurar_cloud_storage.sh` para configurar permisos
+                                """)
+                                data = None
+                        else:
+                            data = None
                     else:
-                        st.error(f"❌ Datos inválidos: Faltan columnas requeridas: {', '.join(validation['missing_basic'])}")
-                        data = None
+                        # Try to load directly (may fail if too large)
+                        try:
+                            data = load_data(uploaded_file)
+                            validation = validate_data(data)
+                            
+                            if validation['is_valid']:
+                                # Save to session state
+                                st.session_state.loaded_data = data
+                                st.session_state.data_source_info = {
+                                    'type': 'upload',
+                                    'source': uploaded_file.name
+                                }
+                                st.info("💡 Los datos están guardados y disponibles para todos los clusters.")
+                                # Update data variable
+                                data = st.session_state.loaded_data
+                        except Exception as e:
+                            error_msg = str(e)
+                            if "413" in error_msg or "Payload Too Large" in error_msg:
+                                st.error("❌ **Error: Archivo demasiado grande para subir directamente**")
+                                st.info("💡 Por favor activa la opción 'Subir a Cloud Storage automáticamente' arriba.")
+                                data = None
+                                st.session_state.loaded_data = None
+                                st.session_state.data_source_info = None
+                            else:
+                                raise
+                else:
+                    # Small file, try to load directly
+                    try:
+                        data = load_data(uploaded_file)
+                        validation = validate_data(data)
                         
-                except Exception as e:
-                    st.error(f"❌ Error cargando archivo: {e}")
-                    data = None
+                        if validation['is_valid']:
+                            # Save to session state
+                            st.session_state.loaded_data = data
+                            st.session_state.data_source_info = {
+                                'type': 'upload',
+                                'source': uploaded_file.name
+                            }
+                            st.info("💡 Los datos están guardados y disponibles para todos los clusters.")
+                            # Update data variable
+                            data = st.session_state.loaded_data
+                    except Exception as e:
+                        error_msg = str(e)
+                        if "413" in error_msg or "Payload Too Large" in error_msg:
+                            st.error("❌ **Error: Archivo demasiado grande**")
+                            st.info("💡 Intenta usar la opción '☁️ Cargar desde Cloud Storage' para archivos grandes.")
+                            data = None
+                            st.session_state.loaded_data = None
+                            st.session_state.data_source_info = None
+                        else:
+                            raise
+                
             else:
                 st.info("👆 Por favor sube un archivo CSV para comenzar el análisis")
         else:
             # Use default file
             try:
-                data = load_data()
-                st.success(f"✅ Cargados {len(data):,} contactos")
+                # Check if we already have data loaded
+                if st.session_state.loaded_data is not None:
+                    data = st.session_state.loaded_data
+                    if st.session_state.data_source_info:
+                        st.success(f"✅ Datos ya cargados: {st.session_state.data_source_info.get('source', 'Archivo predeterminado')}")
+                    else:
+                        st.success(f"✅ Usando datos cargados previamente ({len(data):,} contactos)")
+                else:
+                    data = load_data()
+                    # Save to session state
+                    st.session_state.loaded_data = data
+                    st.session_state.data_source_info = {
+                        'type': 'default',
+                        'source': 'data/raw/contacts_campus_Qro_.csv'
+                    }
+                    st.success(f"✅ Cargados {len(data):,} contactos")
+                    st.info("💡 Los datos están guardados y disponibles para todos los clusters.")
                 
-                with st.expander("ℹ️ Usando Datos Predeterminados"):
-                    st.write("**Archivo:** data/raw/contacts_campus_Qro_.csv")
-                    st.write(f"**Columnas:** {len(data.columns)}")
-                    st.write(f"**Filas:** {len(data):,}")
+                    with st.expander("ℹ️ Información de Datos"):
+                        if st.session_state.data_source_info:
+                            st.write(f"**Fuente:** {st.session_state.data_source_info.get('source', 'Archivo predeterminado')}")
+                        else:
+                            st.write("**Archivo:** data/raw/contacts_campus_Qro_.csv")
+                        st.write(f"**Columnas:** {len(data.columns)}")
+                        st.write(f"**Filas:** {len(data):,}")
             except Exception as e:
                 st.error(f"❌ Error cargando archivo predeterminado: {e}")
                 st.info("💡 Intenta subir tu propio archivo CSV")
                 data = None
+                st.session_state.loaded_data = None
+                st.session_state.data_source_info = None
         
         st.markdown("---")
         
@@ -384,23 +664,121 @@ def main():
     
     # Main content area
     if data is None:
-        st.warning("⚠️ No hay datos cargados. Por favor sube un archivo CSV o asegúrate de que el archivo predeterminado existe.")
+        st.warning("⚠️ No hay datos cargados. Por favor elige una opción para cargar tus datos.")
         st.markdown("---")
-        st.markdown("### 🚀 Comenzando")
+        st.markdown("### 🚀 Comenzando - Cómo Cargar tus Datos")
         st.markdown("""
-        **Opción 1: Usar Archivo Predeterminado**
-        - Asegúrate de que `contacts_campus_Qro_.csv` esté en el directorio `data/raw/`
-        - Selecciona "📂 Usar Archivo Predeterminado" en la barra lateral
-        
-        **Opción 2: Subir Tus Propios Datos**
-        - Exporta contactos de HubSpot como CSV
-        - Selecciona "⬆️ Subir CSV" en la barra lateral
-        - Haz clic en el botón de subir y selecciona tu archivo
-        
-        **¿Necesitas Ayuda?**
-        - Revisa la sección "Formato de Datos Requerido" en la barra lateral
-        - Ve la estructura de datos de ejemplo usando el botón en la barra lateral
+        Tienes **3 opciones** para cargar tus datos. Elige la que mejor se adapte a tu situación:
         """)
+        
+        # Option 1
+        with st.expander("📂 Opción 1: Usar Archivo Predeterminado", expanded=False):
+            st.markdown("""
+            **¿Cuándo usar esta opción?**
+            - Si ya tienes un archivo CSV guardado en el servidor
+            - Para pruebas rápidas con datos de ejemplo
+            
+            **Pasos:**
+            1. Asegúrate de que el archivo `contacts_campus_Qro_.csv` esté en el directorio `data/raw/`
+            2. En la barra lateral izquierda, selecciona **"📂 Usar Archivo Predeterminado"**
+            3. Los datos se cargarán automáticamente
+            
+            **✅ Ventajas:** Rápido, no necesitas subir nada
+            """)
+        
+        # Option 2
+        with st.expander("⬆️ Opción 2: Subir CSV Directamente", expanded=False):
+            st.markdown("""
+            **¿Cuándo usar esta opción?**
+            - Si tu archivo CSV es **menor a 25MB**
+            - Para archivos pequeños o medianos
+            - Cuando quieres subir datos directamente desde tu computadora
+            
+            **Pasos:**
+            1. Exporta tus contactos de HubSpot como archivo CSV
+            2. En la barra lateral, selecciona **"⬆️ Subir CSV"**
+            3. Haz clic en el botón de subir y selecciona tu archivo CSV
+            4. Espera a que se valide y cargue (puede tardar unos segundos)
+            
+            **✅ Ventajas:** Fácil y rápido para archivos pequeños  
+            **⚠️ Limitación:** Archivos mayores a 32MB pueden fallar
+            """)
+        
+        # Option 3 - Cloud Storage
+        with st.expander("☁️ Opción 3: Cargar desde Cloud Storage (Recomendado para archivos grandes)", expanded=True):
+            st.markdown("""
+            **¿Cuándo usar esta opción?**
+            - Si tu archivo CSV es **mayor a 25MB** o muy grande
+            - Cuando necesitas trabajar con archivos de cualquier tamaño
+            - Para archivos que ya están en Google Cloud Storage
+            
+            **Pasos:**
+            
+            **A) Si tu archivo ya está en Cloud Storage:**
+            1. En la barra lateral, selecciona **"☁️ Cargar desde Cloud Storage"**
+            2. El bucket ya está pre-configurado (`data_clusters`) - no necesitas cambiarlo
+            3. Ingresa solo la **ruta del archivo** (ej: `contacts_campus_Qro_.csv`)
+               - 💡 La ruta es el nombre que aparece en la columna "Name" de Cloud Storage
+               - Si está en una carpeta: `uploads/20241112_095136_archivo.csv`
+            4. Haz clic en **"🔄 Cargar desde Cloud Storage"**
+            
+            **B) Si necesitas subir tu archivo primero:**
+            1. Sube tu archivo CSV al bucket del proyecto:
+               - Desde la [consola de GCP](https://console.cloud.google.com/storage): Ve a Cloud Storage → Bucket `data_clusters` → "Upload"
+               - O desde la línea de comandos: `gsutil cp archivo.csv gs://data_clusters/`
+            2. Luego sigue los pasos del punto A arriba (solo necesitas la ruta del archivo)
+            
+            **💡 Simplificado:** El bucket `data_clusters` está pre-configurado para todo el proyecto. Solo necesitas especificar la ruta de tu archivo.
+            
+            **✅ Ventajas:** 
+            - ✅ Funciona con archivos de **cualquier tamaño** (sin límites)
+            - ✅ Los datos se guardan y están disponibles para todos los clusters
+            - ✅ No necesitas recargar al cambiar de cluster
+            
+            **💡 Tip:** Si subes un archivo grande directamente (Opción 2), la aplicación te ofrecerá subirlo automáticamente a Cloud Storage.
+            """)
+        
+        st.markdown("---")
+        st.markdown("### 💡 Consejos Importantes")
+        st.info("""
+        **📊 Una vez cargados los datos:**
+        - Los datos quedan **guardados en tu sesión**
+        - Puedes navegar entre todos los clusters sin recargar
+        - Los datos estarán disponibles hasta que cierres la aplicación o recargues
+        
+        **🔍 ¿Necesitas ayuda?**
+        - Revisa la sección **"Formato de Datos Requerido"** en la barra lateral
+        - Ve la estructura de datos de ejemplo usando el botón en la barra lateral
+        - Si tienes problemas, verifica que tu archivo CSV tenga las columnas requeridas
+        """)
+        
+        st.markdown("---")
+        st.markdown("### ❓ ¿Cuál Opción Elegir?")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            **📂 Archivo Predeterminado**
+            - ✅ Ya está configurado
+            - ✅ Carga instantánea
+            - ⚠️ Solo si existe el archivo
+            """)
+        
+        with col2:
+            st.markdown("""
+            **⬆️ Subir CSV**
+            - ✅ Fácil y directo
+            - ✅ Para archivos < 25MB
+            - ⚠️ Límite de tamaño
+            """)
+        
+        with col3:
+            st.markdown("""
+            **☁️ Cloud Storage**
+            - ✅ Sin límite de tamaño
+            - ✅ Archivos grandes
+            - ✅ Más estable
+            """)
     else:
         # Apply global filters
         filtered_data, filters_applied = apply_global_filters(data)

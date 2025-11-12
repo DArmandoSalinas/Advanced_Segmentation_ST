@@ -1843,15 +1843,4 @@ def render_contact_lookup_tab_c2(cohort):
                 # Likelihood is still available in data but not prominently displayed
                 if 'likelihood_pct' in contact.index and pd.notna(contact.get('likelihood_pct')):
                     st.write(f"**Probabilidad de Cierre:** {contact.get('likelihood_pct', 0):.1f}%")
-            
-            # Show journey visualization
-            st.markdown("---")
-            st.markdown("#### 🗺️ Visualización del Viaje de Fuentes")
-            
-            fig = visualize_source_journey(contact_id, cohort, raw_data=None)
-            if fig:
-                st.pyplot(fig)
-                plt.close(fig)
-            else:
-                st.info("📊 No hay datos de recorrido disponibles para visualización")
 
