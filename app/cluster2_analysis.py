@@ -8,8 +8,10 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 from utils import (
-    hist_latest, normalize_text,
+    hist_latest, hist_all, normalize_text,
     create_segment_pie_chart, create_bar_chart, create_funnel_chart,
     calculate_close_rate, calculate_days_to_close, categorize_ttc,
     display_metrics, create_download_button, display_dataframe_with_style
@@ -1612,6 +1614,168 @@ def render_performance_benchmarks_c2(cohort):
     else:
         st.info("No hay suficientes datos para insights")
 
+def visualize_source_journey(contact_id, cohort, raw_data=None):
+    """
+    Visualize the journey of a contact through different traffic sources over time.
+    Returns a matplotlib figure for display in Streamlit.
+    """
+    # Find the contact
+    key = str(contact_id).strip()
+    matches = cohort[cohort['contact_id'].astype(str) == key]
+    
+    if len(matches) == 0:
+        return None
+    
+    contact = matches.iloc[0]
+    
+    # Collect journey data
+    journey_steps = []
+    
+    # Get original_source and parse historical values
+    original_source_raw = contact.get('original_source', None)
+    original_source_list = []
+    if original_source_raw and str(original_source_raw) not in ["Unknown", "nan", "", "None"]:
+        original_source_list = hist_all(original_source_raw)
+    
+    # Get latest_source and parse historical values
+    latest_source_raw = None
+    if raw_data is not None and 'Latest Traffic Source' in raw_data.columns:
+        raw_matches = raw_data[raw_data['Record ID'].astype(str) == key]
+        if len(raw_matches) > 0:
+            latest_source_raw = raw_matches.iloc[0]['Latest Traffic Source']
+    else:
+        latest_source_raw = contact.get('latest_source', None)
+    
+    latest_source_list = []
+    if latest_source_raw and str(latest_source_raw) not in ["Unknown", "nan", "", "None"]:
+        latest_source_list = hist_all(latest_source_raw)
+    
+    # Build complete journey
+    # Strategy: Use original_source for the beginning and latest_source for the end
+    # Original Source: first value from original_source
+    if original_source_list:
+        first_source = original_source_list[0]
+        journey_steps.append({
+            'step': 'Original Source',
+            'value': str(first_source),
+            'color': '#4CAF50'
+        })
+        
+        # Get the latest source value (last from latest_source if available)
+        latest_source_value = None
+        if latest_source_list:
+            latest_source_value = str(latest_source_list[-1]).strip()
+        elif len(original_source_list) > 1:
+            latest_source_value = str(original_source_list[-1]).strip()
+        
+        # Middle steps: all other values from original_source (excluding first and last if it matches latest)
+        # These represent intermediate touchpoints
+        middle_sources = []
+        if len(original_source_list) > 1:
+            # Add all values from original_source except the first
+            for source in original_source_list[1:]:
+                source_str = str(source).strip()
+                if source_str not in ["Unknown", "nan", "", "None"]:
+                    # Don't add if it's the same as the latest source (we'll add it separately)
+                    if latest_source_value and source_str == latest_source_value:
+                        continue
+                    middle_sources.append(source_str)
+        
+        # Add middle steps
+        for i, source in enumerate(middle_sources):
+            journey_steps.append({
+                'step': f'Touch {i+1}',
+                'value': source,
+                'color': '#2196F3'
+            })
+        
+        # Latest Source: last value from latest_source (if available and different from first)
+        if latest_source_value and str(first_source).strip() != latest_source_value:
+            journey_steps.append({
+                'step': 'Latest Source',
+                'value': latest_source_value,
+                'color': '#2196F3'
+            })
+    
+    # If no journey steps found
+    if not journey_steps:
+        return None
+    
+    # Create visualization - HORIZONTAL LAYOUT
+    box_width = 2.5
+    box_spacing = 0.8
+    total_width = len(journey_steps) * (box_width + box_spacing) + 1
+    
+    fig, ax = plt.subplots(figsize=(max(14, total_width), 5))
+    ax.set_xlim(0, total_width)
+    ax.set_ylim(0, 3)
+    ax.axis('off')
+    
+    # Title
+    ax.text(total_width / 2, 2.6, f'Source Journey for Contact {contact_id}',
+            fontsize=16, fontweight='bold', ha='center')
+    
+    # Draw journey steps HORIZONTALLY (left to right)
+    for i, step in enumerate(journey_steps):
+        x_pos = 0.5 + i * (box_width + box_spacing)
+        y_pos = 1.2
+        
+        # Draw box for step
+        box = FancyBboxPatch(
+            (x_pos, y_pos - 0.35), box_width, 0.7,
+            boxstyle="round,pad=0.1",
+            edgecolor=step['color'],
+            facecolor=step['color'],
+            alpha=0.3,
+            linewidth=2
+        )
+        ax.add_patch(box)
+        
+        # Add step label (top of box)
+        ax.text(x_pos + box_width/2, y_pos + 0.15, f"{step['step']}",
+                fontsize=9, fontweight='bold', ha='center', va='center')
+        
+        # Add value text (inside box, wrapped if needed)
+        value_text = step['value']
+        if len(value_text) > 20:
+            # Wrap long text
+            words = value_text.split()
+            lines = []
+            current_line = []
+            for word in words:
+                test_line = ' '.join(current_line + [word])
+                if len(test_line) <= 20:
+                    current_line.append(word)
+                else:
+                    if current_line:
+                        lines.append(' '.join(current_line))
+                    current_line = [word]
+            if current_line:
+                lines.append(' '.join(current_line))
+            value_text = '\n'.join(lines)
+        
+        ax.text(x_pos + box_width/2, y_pos, value_text,
+                fontsize=8, ha='center', va='center', wrap=True)
+        
+        # Draw arrow to next step
+        if i < len(journey_steps) - 1:
+            arrow = FancyArrowPatch(
+                (x_pos + box_width, y_pos),
+                (x_pos + box_width + box_spacing, y_pos),
+                arrowstyle='->,head_width=0.4,head_length=0.4',
+                color='gray',
+                linewidth=2
+            )
+            ax.add_patch(arrow)
+    
+    # Summary text
+    summary_text = f"Total touchpoints: {len(journey_steps)}"
+    ax.text(total_width / 2, 0.3, summary_text,
+            fontsize=10, ha='center', style='italic', color='gray')
+    
+    plt.tight_layout()
+    return fig
+
 def render_contact_lookup_tab_c2(cohort):
     """Render contact lookup tab"""
     st.markdown("### 🔍 Búsqueda de Contacto Individual")
@@ -1679,4 +1843,15 @@ def render_contact_lookup_tab_c2(cohort):
                 # Likelihood is still available in data but not prominently displayed
                 if 'likelihood_pct' in contact.index and pd.notna(contact.get('likelihood_pct')):
                     st.write(f"**Probabilidad de Cierre:** {contact.get('likelihood_pct', 0):.1f}%")
+            
+            # Show journey visualization
+            st.markdown("---")
+            st.markdown("#### 🗺️ Visualización del Viaje de Fuentes")
+            
+            fig = visualize_source_journey(contact_id, cohort, raw_data=None)
+            if fig:
+                st.pyplot(fig)
+                plt.close(fig)
+            else:
+                st.info("📊 No hay datos de recorrido disponibles para visualización")
 

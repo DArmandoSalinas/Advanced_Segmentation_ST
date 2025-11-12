@@ -1234,36 +1234,69 @@ def visualize_source_journey(contact_id, cohort, raw_data=None):
     # Collect journey data
     journey_steps = []
     
-    # Step 1: Original Source
-    original_source = contact.get('original_source', None)
-    if original_source and str(original_source) not in ["Unknown", "nan", "", "None"]:
-        journey_steps.append({
-            'step': 'Original Source',
-            'value': str(original_source),
-            'color': '#4CAF50'
-        })
+    # Get original_source and parse historical values
+    original_source_raw = contact.get('original_source', None)
+    original_source_list = []
+    if original_source_raw and str(original_source_raw) not in ["Unknown", "nan", "", "None"]:
+        original_source_list = hist_all(original_source_raw)
     
-    # Step 2: Historical Latest Source values (if available in raw data)
+    # Get latest_source and parse historical values
+    latest_source_raw = None
     if raw_data is not None and 'Latest Traffic Source' in raw_data.columns:
         raw_matches = raw_data[raw_data['Record ID'].astype(str) == key]
         if len(raw_matches) > 0:
             latest_source_raw = raw_matches.iloc[0]['Latest Traffic Source']
-            historical_sources = hist_all(latest_source_raw)
-            
-            for i, source in enumerate(historical_sources):
-                if str(source) not in ["Unknown", "nan", "", "None"]:
-                    journey_steps.append({
-                        'step': f'Touch {i+1}',
-                        'value': str(source),
-                        'color': '#2196F3'
-                    })
     else:
-        # Use latest source from processed data if available
-        latest_source = contact.get('latest_source', None)
-        if latest_source and str(latest_source) not in ["Unknown", "nan", "", "None"]:
+        latest_source_raw = contact.get('latest_source', None)
+    
+    latest_source_list = []
+    if latest_source_raw and str(latest_source_raw) not in ["Unknown", "nan", "", "None"]:
+        latest_source_list = hist_all(latest_source_raw)
+    
+    # Build complete journey
+    # Strategy: Use original_source for the beginning and latest_source for the end
+    # Original Source: first value from original_source
+    if original_source_list:
+        first_source = original_source_list[0]
+        journey_steps.append({
+            'step': 'Original Source',
+            'value': str(first_source),
+            'color': '#4CAF50'
+        })
+        
+        # Get the latest source value (last from latest_source if available)
+        latest_source_value = None
+        if latest_source_list:
+            latest_source_value = str(latest_source_list[-1]).strip()
+        elif len(original_source_list) > 1:
+            latest_source_value = str(original_source_list[-1]).strip()
+        
+        # Middle steps: all other values from original_source (excluding first and last if it matches latest)
+        # These represent intermediate touchpoints
+        middle_sources = []
+        if len(original_source_list) > 1:
+            # Add all values from original_source except the first
+            for source in original_source_list[1:]:
+                source_str = str(source).strip()
+                if source_str not in ["Unknown", "nan", "", "None"]:
+                    # Don't add if it's the same as the latest source (we'll add it separately)
+                    if latest_source_value and source_str == latest_source_value:
+                        continue
+                    middle_sources.append(source_str)
+        
+        # Add middle steps
+        for i, source in enumerate(middle_sources):
+            journey_steps.append({
+                'step': f'Touch {i+1}',
+                'value': source,
+                'color': '#2196F3'
+            })
+        
+        # Latest Source: last value from latest_source (if available and different from first)
+        if latest_source_value and str(first_source).strip() != latest_source_value:
             journey_steps.append({
                 'step': 'Latest Source',
-                'value': str(latest_source),
+                'value': latest_source_value,
                 'color': '#2196F3'
             })
     
